@@ -116,12 +116,14 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
      (leo--parse-xml
       (leo--generate-url lang word))))))
 
+;;;###autoload
 (defun leo-translate-word (word)
   "Translate WORD from language set by 'leo-language' to German.
 Show translations in new buffer windown."
   (interactive "sTranslate: ")
   (leo--translate leo-language word))
 
+;;;###autoload
 (defun leo-translate-at-point ()
   "Translate word under cursor from language set by 'leo-language' to German.
 Show translations in new buffer windown."
