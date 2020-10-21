@@ -5,7 +5,6 @@
 ;; Author: M.T. Enders <michael AT enders.io>
 ;; Created: 21 Oct 2020
 ;;
-;; Version: 0.1
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience
 ;; URL: https://github.com/mtenders/emacs-leo
