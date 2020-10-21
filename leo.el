@@ -8,7 +8,7 @@
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience
-;; URL: https://github.com/mtenders/leo
+;; URL: https://github.com/mtenders/emacs-leo
 ;; Prefix: leo
 ;; Separator: -
 
