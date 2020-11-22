@@ -6,7 +6,7 @@
 ;; Created: 21 Oct 2020
 ;;
 ;; Package-Requires: ((emacs "25.1"))
-;; Keywords: convenience
+;; Keywords: convenience, translate
 ;; URL: https://github.com/mtenders/emacs-leo
 ;; Version: 0.1
 ;; Prefix: leo
