@@ -97,6 +97,18 @@ The returned list conains strings of alternating languages"
 	 (words (leo--map-get-children side 'words)))
     (leo--pair-translations (leo--extract-translations  words))))
 
+(defun leo--extract-forum-subject-link-pairs (parsed-xml)
+  "Extract forum entry names and links from PARSED-XML.
+Returns a nested list of subject, url pairs."
+  (let* ((forumref (leo--map-get-children parsed-xml 'forumRef))
+         (forum (leo--map-get-children parsed-xml 'forum))
+         (forum-list (leo--map-get-children forum 'link)))
+          (mapcar
+           (lambda (x)
+             (cons (nth 2 x)
+                   (cdr (assoc 'href (nth 1 x)))))
+           forum-list)))
+
 (defun leo--print-translation (pairs)
   "Format and print translation PAIRS."
   (if (null pairs) nil
@@ -108,18 +120,33 @@ The returned list conains strings of alternating languages"
       "\n"))
     (leo--print-translation (cdr pairs))))
 
-(defun leo--open-translation-buffer (pairs)
+(defun leo--print-forums (forum-pairs)
+  "Format and print translation FORUM-PAIRS."
+  (if (null forum-pairs) nil
+    (princ
+     (concat
+      (caar forum-pairs)
+      "\n   -> "
+      (concat "https://dict.leo.org" (cdar forum-pairs))
+      "\n"))
+    (leo--print-forums (cdr forum-pairs))))
+
+(defun leo--open-translation-buffer (pairs forums)
   "Print translation PAIRS to temporary buffer."
   (with-output-to-temp-buffer " *leo*"
-    (leo--print-translation pairs))
+      (princ "SEARCH RESULTS:\n\n")
+      (leo--print-translation pairs)
+      (princ "\n\nFORUM RESULTS:\n\n")
+      (leo--print-forums forums))
   (other-window 1))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
-  (leo--open-translation-buffer
-   (leo--extract-translation-pairs
-     (leo--parse-xml
-      (leo--generate-url lang word)))))
+  (let ((xml (leo--parse-xml
+              (leo--generate-url lang word))))
+    (leo--open-translation-buffer
+     (leo--extract-translation-pairs xml)
+     (leo--extract-forum-subject-link-pairs xml))))
 
 ;;;###autoload
 (defun leo-translate-word (word)
