@@ -58,7 +58,11 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
 
 (defface leo--auxiliary-face
     '((t :inherit font-lock-comment-face))
-  "Face used to fade auxiliary items.")
+    "Face used to fade auxiliary items.")
+
+(defface leo--match-face
+    '((t :inherit success :weight bold))
+  "Face used for search terms in search results.")
 
 (defun leo--generate-url (lang word)
   "Generate link to query for translations of WORD from LANG to German."
@@ -156,14 +160,22 @@ Returns a nested list of forum posts titles, urls, and teasers."
           "\n\n"
           (leo--print-forums (cdr forum-posts))))))))
 
-(defun leo--open-translation-buffer (pairs forums)
+(defun leo--propertize-search-term-in-results (word)
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward-regexp word nil 'noerror)
+      (replace-match (propertize word 'face 'leo--match-face)))))
+
+(defun leo--open-translation-buffer (pairs forums word)
   "Print translation PAIRS to temporary buffer."
   (with-output-to-temp-buffer " *leo*"
     (princ "SEARCH RESULTS:\n\n")
     (leo--print-translation pairs)
     (princ "\n\nFORUM RESULTS:\n\n")
-    (leo--print-forums forums)))
-  ;; (other-window 1))
+    (leo--print-forums forums))
+  (other-window 1)
+  (let ((inhibit-read-only t))
+    (leo--propertize-search-term-in-results word)))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
@@ -171,7 +183,8 @@ Returns a nested list of forum posts titles, urls, and teasers."
               (leo--generate-url lang word))))
     (leo--open-translation-buffer
      (leo--extract-translation-pairs xml)
-     (leo--extract-forum-subject-link-pairs xml))))
+     (leo--extract-forum-subject-link-pairs xml)
+     word)))
 
 ;;;###autoload
 (defun leo-translate-word (word)
