@@ -52,6 +52,10 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
 
+(defface leo--forum-link-face
+  '((t :inherit warning))
+  "Face used for links to forum posts.")
+
 (defun leo--generate-url (lang word)
   "Generate link to query for translations of WORD from LANG to German."
   (concat
@@ -123,13 +127,23 @@ Returns a nested list of subject, url pairs."
 (defun leo--print-forums (forum-pairs)
   "Format and print translation FORUM-PAIRS."
   (if (null forum-pairs) nil
-    (princ
-     (concat
-      (caar forum-pairs)
-      "\n   -> "
-      (concat "https://dict.leo.org" (cdar forum-pairs))
-      "\n"))
-    (leo--print-forums (cdr forum-pairs))))
+    (let* ((url (concat "https://dict.leo.org" (cdar forum-pairs)))
+           (prop-link
+            (propertize (caar forum-pairs)
+                        'face 'leo--forum-link-face ;warning ;shr-url
+                        'mouse-face 'highlight
+                        'shr-url url
+                        'follow-link t
+                        'keymap shr-map
+                        'fontified t
+                        'help-echo (concat "Browse forum entry for '" (caar forum-pairs) "'"))))
+      (with-current-buffer (get-buffer-create " *leo*")
+        (goto-char (point-max))
+        (insert
+         (concat
+          prop-link
+          "\n\n"
+          (leo--print-forums (cdr forum-pairs))))))))
 
 (defun leo--open-translation-buffer (pairs forums)
   "Print translation PAIRS to temporary buffer."
