@@ -56,6 +56,10 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   '((t :inherit warning))
   "Face used for links to forum posts.")
 
+(defface leo--auxiliary-face
+    '((t :inherit font-lock-comment-face))
+  "Face used to fade auxiliary items.")
+
 (defun leo--generate-url (lang word)
   "Generate link to query for translations of WORD from LANG to German."
   (concat
@@ -69,7 +73,7 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
 
 (defun leo--parse-xml (url)
   "Parse xml file retrieved from URL."
-      (with-temp-buffer
+  (with-temp-buffer
 	(url-insert-file-contents url)
 	(xml-parse-region (point-min) (point-max))))
 
@@ -103,56 +107,63 @@ The returned list conains strings of alternating languages"
 
 (defun leo--extract-forum-subject-link-pairs (parsed-xml)
   "Extract forum entry names and links from PARSED-XML.
-Returns a nested list of subject, url pairs."
+Returns a nested list of forum posts titles, urls, and teasers."
   (let* ((forumref (leo--map-get-children parsed-xml 'forumRef))
-         (forum (leo--map-get-children parsed-xml 'forum))
-         (forum-list (leo--map-get-children forum 'link)))
-          (mapcar
-           (lambda (x)
-             (cons (nth 2 x)
-                   (cdr (assoc 'href (nth 1 x)))))
-           forum-list)))
+         (forumref-link (leo--map-get-children forumref 'link)))
+         (mapcar (lambda (x)
+                   (list
+                    (nth 2 (nth 2 x)) ; subject
+                    (cdr (assoc 'href (nth 1 x))) ; href
+                    (nth 2 (nth 3 x)))) ; teaser
+                 forumref-link)))
 
 (defun leo--print-translation (pairs)
   "Format and print translation PAIRS."
   (if (null pairs) nil
-    (princ
-     (concat
-      (caar pairs)
-      "\n   -> "
-      (cdar pairs)
-      "\n"))
+    (with-current-buffer (get-buffer " *leo*")
+      (insert
+       (concat
+        (caar pairs)
+        "\n       "
+        (propertize "-> "
+                    'face 'leo--auxiliary-face)
+        (cdar pairs)
+        "\n\n")))
     (leo--print-translation (cdr pairs))))
 
-(defun leo--print-forums (forum-pairs)
-  "Format and print translation FORUM-PAIRS."
-  (if (null forum-pairs) nil
-    (let* ((url (concat "https://dict.leo.org" (cdar forum-pairs)))
-           (prop-link
-            (propertize (caar forum-pairs)
-                        'face 'leo--forum-link-face ;warning ;shr-url
+(defun leo--print-forums (forum-posts)
+  "Format and print translation FORUM-POSTS."
+  (if (null forum-posts) nil
+    (let* ((url (concat "https://dict.leo.org" (car (cdar forum-posts))))
+           (post-title
+            (propertize (caar forum-posts)
+                        'face 'leo--forum-link-face
                         'mouse-face 'highlight
                         'shr-url url
                         'follow-link t
                         'keymap shr-map
                         'fontified t
-                        'help-echo (concat "Browse forum entry for '" (caar forum-pairs) "'"))))
-      (with-current-buffer (get-buffer-create " *leo*")
-        (goto-char (point-max))
+                        'help-echo (concat "Browse forum entry for '" (caar forum-posts) "'")))
+           (teaser
+            (propertize (nth 2 (car forum-posts))
+                        'face 'leo--auxiliary-face)))
+      (with-current-buffer (get-buffer " *leo*")
         (insert
          (concat
-          prop-link
+          post-title
+          "\n"
+          teaser
           "\n\n"
-          (leo--print-forums (cdr forum-pairs))))))))
+          (leo--print-forums (cdr forum-posts))))))))
 
 (defun leo--open-translation-buffer (pairs forums)
   "Print translation PAIRS to temporary buffer."
   (with-output-to-temp-buffer " *leo*"
-      (princ "SEARCH RESULTS:\n\n")
-      (leo--print-translation pairs)
-      (princ "\n\nFORUM RESULTS:\n\n")
-      (leo--print-forums forums))
-  (other-window 1))
+    (princ "SEARCH RESULTS:\n\n")
+    (leo--print-translation pairs)
+    (princ "\n\nFORUM RESULTS:\n\n")
+    (leo--print-forums forums)))
+  ;; (other-window 1))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
