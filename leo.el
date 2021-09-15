@@ -83,7 +83,7 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
 
 (defun leo--extract-translations (lst &optional acc)
   "Extract translations from LST and add it to ACC.
-The returned list conains strings of alternating languages"
+The returned list contains strings of alternating languages"
   (while (consp lst)
     (setq acc (cons (mapconcat 'caddr (cddr (pop lst)) ", ") acc)))
   (reverse acc))
@@ -100,14 +100,49 @@ The returned list conains strings of alternating languages"
    (lambda (node) (xml-get-children node child))
    seq))
 
+(defun leo--extract-tag-from-side (side)
+  "Extract a term's domain tag from a given SIDE.
+A side is either the source or target result for a given search."
+  (let* ((repr (car (xml-get-children side 'repr)))
+	     (domain (car (xml-get-children repr 'domain)))
+         (small (car (xml-get-children domain 'small)))
+         (m (car (xml-get-children small 'm)))
+         (tag (car (xml-get-children m 't))))
+    (or (caddr tag)
+        ""))) ; handle no tag
+
+(defun leo--extract-plural-from-side (side)
+  "Extract a term's plural form from a given SIDE.
+A side is either the source or target result for a given search.
+Returns a string ."
+  (let* ((repr (car (xml-get-children side 'repr)))
+	     (flecttabref (car (xml-get-children repr 'flecttabref)))
+         (small (car (xml-get-children flecttabref 'small)))
+         (m (car (xml-get-children small 'm)))
+         (tag (car (xml-get-children m 't))))
+    (or (cadddr small)
+        ""))) ; handle no plural
+
+(defun leo--extract-translations-and-tags (sides &optional words-tags-list)
+  "Extract translations and tags from list SIDES.
+Returns nested list of term/tag cons cells, for both languages"
+  (while (consp sides)
+    (setq words-tags-list
+          (cons (list
+                 (caddar (cddr (car (leo--map-get-children sides 'words))))
+                 (leo--extract-tag-from-side (car sides))
+                 (leo--extract-plural-from-side (car sides)))
+                words-tags-list))
+    (pop sides))
+  (reverse words-tags-list))
+
 (defun leo--extract-translation-pairs (parsed-xml)
   "Extract translation pairs from PARSED-XML."
   (let* ((sectionlist (leo--map-get-children parsed-xml 'sectionlist))
 	 (section (leo--map-get-children sectionlist 'section))
 	 (entry (leo--map-get-children section 'entry))
-	 (side (leo--map-get-children entry 'side))
-	 (words (leo--map-get-children side 'words)))
-    (leo--pair-translations (leo--extract-translations  words))))
+	 (side (leo--map-get-children entry 'side)))
+    (leo--pair-translations (leo--extract-translations-and-tags side))))
 
 (defun leo--extract-forum-subject-link-pairs (parsed-xml)
   "Extract forum entry names and links from PARSED-XML.
@@ -122,18 +157,37 @@ Returns a nested list of forum posts titles, urls, and teasers."
                  forumref-link)))
 
 (defun leo--print-translation (pairs)
-  "Format and print translation PAIRS."
-  (if (null pairs) nil
-    (with-current-buffer (get-buffer " *leo*")
-      (insert
-       (concat
-        (caar pairs)
-        "\n       "
-        (propertize "-> "
-                    'face 'leo--auxiliary-face)
-        (cdar pairs)
+  "Format and print translation PAIRS.
+Results include domain tags and plural forms."
+  (let ((src (caaar pairs))
+        (src-tag (cadaar pairs))
+        (src-plr (car (cddaar pairs)))
+        (targ (cadar pairs))
+        (targ-tag (caddar pairs))
+        (targ-plr (car (cdddar pairs))))
+    (if (null pairs) nil
+      (with-current-buffer (get-buffer " *leo*")
+        (insert
+         (concat
+          src
+          (if (not (eq src-tag ""))
+              (propertize (concat " [" src-tag "]")
+                          'face 'leo--auxiliary-face))
+          (if (not (eq src-plr ""))
+              (propertize (concat " pl." src-plr)
+                          'face 'leo--auxiliary-face))
+          "\n       "
+          (propertize "-> "
+                      'face 'leo--auxiliary-face)
+          targ
+          (if (not (eq targ-tag ""))
+            (propertize (concat " [" targ-tag "]")
+                        'face 'leo--auxiliary-face))
+          (if (not (eq targ-plr ""))
+              (propertize (concat " pl." targ-plr)
+                          'face 'leo--auxiliary-face))
         "\n\n")))
-    (leo--print-translation (cdr pairs))))
+    (leo--print-translation (cdr pairs)))))
 
 (defun leo--print-forums (forum-posts)
   "Format and print translation FORUM-POSTS."
@@ -141,12 +195,13 @@ Returns a nested list of forum posts titles, urls, and teasers."
     (let* ((url (concat "https://dict.leo.org" (car (cdar forum-posts))))
            (post-title
             (propertize (caar forum-posts)
-                        'face 'leo--forum-link-face
-                        'mouse-face 'highlight
-                        'shr-url url
+                        'button t
                         'follow-link t
+                        'shr-url url
                         'keymap shr-map
                         'fontified t
+                        'face 'leo--forum-link-face
+                        'mouse-face 'highlight
                         'help-echo (concat "Browse forum entry for '" (caar forum-posts) "'")))
            (teaser
             (propertize (nth 2 (car forum-posts))
