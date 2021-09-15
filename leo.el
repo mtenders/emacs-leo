@@ -228,7 +228,8 @@ Results include domain tags and plural forms."
     (leo--print-translation pairs)
     (princ "\n\nFORUM RESULTS:\n\n")
     (leo--print-forums forums))
-  (other-window 1)
+  (if (not (equal (buffer-name (current-buffer)) " *leo*"))
+      (other-window 1))
   (let ((inhibit-read-only t))
     (leo--propertize-search-term-in-results word)))
 
