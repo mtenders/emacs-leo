@@ -52,7 +52,7 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
 
-(defface leo--forum-link-face
+(defface leo--link-face
   '((t :inherit warning))
   "Face used for links to forum posts.")
 
@@ -123,6 +123,20 @@ Returns a string ."
     (or (cadddr small)
         ""))) ; handle no plural
 
+(defun leo--extract-flextable-from-side (side)
+  "Extract the link to a term's inflexion table from a given SIDE.
+A side is either the source or target result for a given search.
+Returns a string ."
+  (let* ((base-url "https://dict.leo.org/pages/flecttab/flectionTable.php?kvz=")
+         (ibox (car (xml-get-children side 'ibox)))
+         (flexmain (car (xml-get-children ibox 'flexmain)))
+         (url-suffix (cdr (assoc 'table (car (cdaddr flexmain))))))
+	     ;; (flecttab (car (xml-get-children ibox 'flecttab))) ; NB: DEPRECATED!
+         ;; (url-suffix (cdar (cddr (cadr flecttab)))))
+    (if flexmain
+        (or (concat base-url url-suffix)
+            ""))))
+
 (defun leo--extract-translations-and-tags (sides &optional words-tags-list)
   "Extract translations and tags from list SIDES.
 Returns nested list of term/tag cons cells, for both languages"
@@ -131,7 +145,8 @@ Returns nested list of term/tag cons cells, for both languages"
           (cons (list
                  (caddar (cddr (car (leo--map-get-children sides 'words))))
                  (leo--extract-tag-from-side (car sides))
-                 (leo--extract-plural-from-side (car sides)))
+                 (leo--extract-plural-from-side (car sides))
+                 (leo--extract-flextable-from-side (car sides)))
                 words-tags-list))
     (pop sides))
   (reverse words-tags-list))
@@ -164,7 +179,8 @@ Results include domain tags and plural forms."
         (src-plr (car (cddaar pairs)))
         (targ (cadar pairs))
         (targ-tag (caddar pairs))
-        (targ-plr (car (cdddar pairs))))
+        (targ-plr (car (cdddar pairs)))
+        (flextab-url (cadr (cdddar pairs))))
     (if (null pairs) nil
       (with-current-buffer (get-buffer " *leo*")
         (insert
@@ -184,9 +200,26 @@ Results include domain tags and plural forms."
             (propertize (concat " [" targ-tag "]")
                         'face 'leo--auxiliary-face))
           (if (not (eq targ-plr ""))
-              (propertize (concat " pl." targ-plr)
-                          'face 'leo--auxiliary-face))
-        "\n\n")))
+              (propertize (concat targ-plr)
+                          'button t
+                          'follow-link t
+                          'shr-url flextab-url
+                          'keymap shr-map
+                          'fontified t
+                          'face 'leo--auxiliary-face
+                          'mouse-face 'highlight
+                          'help-echo (concat "Browse inflexion table for '" targ "'")))
+          (propertize " | " 'face 'leo--auxiliary-face)
+          (propertize "table"
+                      'button t
+                      'follow-link t
+                      'shr-url flextab-url
+                      'keymap shr-map
+                      'fontified t
+                      'face 'leo--link-face
+                      'mouse-face 'highlight
+                      'help-echo (concat "Browse inflexion table for '" targ "'"))
+          "\n\n")))
     (leo--print-translation (cdr pairs)))))
 
 (defun leo--print-forums (forum-posts)
@@ -200,7 +233,7 @@ Results include domain tags and plural forms."
                         'shr-url url
                         'keymap shr-map
                         'fontified t
-                        'face 'leo--forum-link-face
+                        'face 'leo--link-face
                         'mouse-face 'highlight
                         'help-echo (concat "Browse forum entry for '" (caar forum-posts) "'")))
            (teaser
@@ -219,7 +252,14 @@ Results include domain tags and plural forms."
   (save-excursion
     (goto-char (point-min))
     (while (search-forward-regexp word nil 'noerror)
-      (replace-match (propertize word 'face 'leo--match-face)))))
+      (let ((props (text-properties-at (- (point) 1))))
+        ;; only propertize match term if no other properties
+        ;; until I work out how to add properties
+        ;; while maintaining existing ones
+        ;; this may well be a decent way to display the info anyway
+        (if props
+            nil
+          (replace-match (propertize word 'face 'leo--match-face)))))))
 
 (defun leo--open-translation-buffer (pairs forums word)
   "Print translation PAIRS to temporary buffer."
