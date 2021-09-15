@@ -224,9 +224,9 @@ Results include domain tags and plural forms."
 (defun leo--open-translation-buffer (pairs forums word)
   "Print translation PAIRS to temporary buffer."
   (with-output-to-temp-buffer " *leo*"
-    (princ "SEARCH RESULTS:\n\n")
+    (princ (concat "leo.de search results for " word ":\n\n"))
     (leo--print-translation pairs)
-    (princ "\n\nFORUM RESULTS:\n\n")
+    (princ (concat "\n\nleo.de forum results for " word ":\n\n"))
     (leo--print-forums forums))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1))
