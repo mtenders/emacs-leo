@@ -62,7 +62,7 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
 
 (defface leo--match-face
     '((t :inherit success :weight bold))
-  "Face used for search terms in search results.")
+    "Face used for search terms in search results.")
 
 (defun leo--generate-url (lang word)
   "Generate link to query for translations of WORD from LANG to German."
@@ -260,7 +260,8 @@ Results include domain tags and plural forms."
                              '(face leo--match-face))))))
 
 (defun leo--open-translation-buffer (pairs forums word)
-  "Print translation PAIRS to temporary buffer."
+  "Print translation PAIRS and FORUMS in temporary buffer.
+The search term WORD is propertized in results."
   (with-output-to-temp-buffer " *leo*"
     (princ (concat "leo.de search results for " word ":\n\n"))
     (leo--print-translation pairs)
@@ -269,7 +270,9 @@ Results include domain tags and plural forms."
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1))
   (let ((inhibit-read-only t))
-    (leo--propertize-search-term-in-results word)))
+    (leo--propertize-search-term-in-results word))
+  (local-set-key (kbd "<tab>") 'shr-next-link)
+  (local-set-key (kbd "<backtab>") 'shr-previous-link))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
