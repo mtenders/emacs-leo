@@ -249,17 +249,15 @@ Results include domain tags and plural forms."
           (leo--print-forums (cdr forum-posts))))))))
 
 (defun leo--propertize-search-term-in-results (word)
+  "Add `leo--match-face' to any instances of WORD in results buffer."
   (save-excursion
     (goto-char (point-min))
     (while (search-forward-regexp word nil 'noerror)
       (let ((props (text-properties-at (- (point) 1))))
-        ;; only propertize match term if no other properties
-        ;; until I work out how to add properties
-        ;; while maintaining existing ones
-        ;; this may well be a decent way to display the info anyway
-        (if props
-            nil
-          (replace-match (propertize word 'face 'leo--match-face)))))))
+        (remove-text-properties (- (point) (length word)) (point)
+                                '(face face))
+        (add-text-properties (- (point) (length word)) (point)
+                             '(face leo--match-face))))))
 
 (defun leo--open-translation-buffer (pairs forums word)
   "Print translation PAIRS to temporary buffer."
