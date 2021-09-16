@@ -100,6 +100,19 @@ The returned list contains strings of alternating languages"
    (lambda (node) (xml-get-children node child))
    seq))
 
+(defun leo--extract-cases-from-side (side)
+  "Extract a term's case from a given SIDE.
+A side is either the source or target result for a given search."
+  (let* ((repr (xml-get-children side 'repr))
+         (smalls (leo--map-get-children repr 'small))
+         (sups (leo--map-get-children smalls 'sup))
+         (ms (leo--map-get-children sups 'm))
+         (cases (leo--map-get-children ms 't)))
+    (or (mapcar (lambda (x)
+                  (caddr x))
+                cases)
+        ""))) ; handle no case markers
+
 (defun leo--extract-tag-from-side (side)
   "Extract a term's domain tag from a given SIDE.
 A side is either the source or target result for a given search."
@@ -117,9 +130,9 @@ A side is either the source or target result for a given search.
 Returns a string ."
   (let* ((repr (car (xml-get-children side 'repr)))
 	     (flecttabref (car (xml-get-children repr 'flecttabref)))
-         (small (car (xml-get-children flecttabref 'small)))
-         (m (car (xml-get-children small 'm)))
-         (tag (car (xml-get-children m 't))))
+         (small (car (xml-get-children flecttabref 'small))))
+         ;; (m (car (xml-get-children small 'm)))
+         ;; (tag (car (xml-get-children m 't))))
     (or (cadddr small)
         ""))) ; handle no plural
 
@@ -146,7 +159,8 @@ Returns nested list of term/tag cons cells, for both languages"
                  (caddar (cddr (car (leo--map-get-children sides 'words))))
                  (leo--extract-tag-from-side (car sides))
                  (leo--extract-plural-from-side (car sides))
-                 (leo--extract-flextable-from-side (car sides)))
+                 (leo--extract-flextable-from-side (car sides))
+                 (leo--extract-cases-from-side (car sides)))
                 words-tags-list))
     (pop sides))
   (reverse words-tags-list))
@@ -180,7 +194,8 @@ Results include domain tags and plural forms."
         (targ (cadar pairs))
         (targ-tag (caddar pairs))
         (targ-plr (car (cdddar pairs)))
-        (flextab-url (cadr (cdddar pairs))))
+        (flextab-url (cadr (cdddar pairs)))
+        (cases (caddr (cdddar pairs))))
     (if (null pairs) nil
       (with-current-buffer (get-buffer " *leo*")
         (insert
@@ -209,6 +224,9 @@ Results include domain tags and plural forms."
                           'face 'leo--auxiliary-face
                           'mouse-face 'highlight
                           'help-echo (concat "Browse inflexion table for '" targ "'")))
+          " "
+          (if (not (eq cases ""))
+              (propertize (concat "(" (mapconcat #'identity cases ", ") ")") 'face 'leo--auxiliary-face ))
           (propertize " | " 'face 'leo--auxiliary-face)
           (propertize "table"
                       'button t
