@@ -201,7 +201,7 @@ A side is either the source or target result for a given search."
              (or (caddr tag-de)
                   "")))))) ;handle no tag
 
-;; ONLY FOR (DE) NOUNS
+;; ONLY FOR (DE) NOUNS?
 (defun leo--extract-plural-from-side (side)
   "Extract a term's plural form from a given SIDE.
 A side is either the source or target result for a given search.
@@ -229,13 +229,51 @@ Returns a string ."
         (or (concat base-url url-suffix)
             ""))))
 
+
+(defun leo--build-list-of-entries-words (entries)
+  "Returns a list of entries, which each contain a two-item lists of the words of each side."
+  (mapcar (lambda (x)
+            (leo--build-entry-from-sides (leo--get-sides-from-entry x)))
+          entries))
+
+;; split this into a side = words plus extra infos (pl., tags etc.)
+;; then entry = cons of sides
+(defun leo--build-entry-from-sides (sides)
+  "Build a two-item list, each containing the list of words for a side, plus any tags, case markers, etc. that it contains."
+  (mapcar (lambda (x)
+            (list (leo--extract-words-from-side x))) ; list to make room for tags etc.
+          sides))
+
+;; REPLACES leo--extract-translation-pairs and leo--make-entry-from-sides?
+;; MODIFY to allow addition of extra info for each side!!
+;; (defun leo--extract-translation-pairs (parsed-xml) ;for testing
+(defun leo--sort-entry-lists-by-part-of-speech (parsed-xml)
+  "Returns list of lists of sections returned by result PARSED-XML.
+Each section contains first its part of speech as a string, followed by lists of entries.
+The entries contain a list for each language pair, or side. Each side contains a list of terms, followed by additional details such as plural forms, case markers, domain tags, etc."
+  (let* ((sectionlist (leo--get-result-section-list (car parsed-xml)))
+         (sections (leo--get-result-sections-as-list sectionlist))
+         (leo-sections-results nil)) ;clear prev?
+    (while sections
+      (let* ((entries (leo--get-entries-from-section (car sections))))
+        (setq leo-sections-results
+              (cons
+               (cons
+                (leo--get-section-part-of-speech (car sections))
+                (leo--build-list-of-entries-words entries))
+               leo-sections-results)))
+      (pop sections))
+    (reverse leo-sections-results)))
+
+;; re-write for a single SIDE, make a nice list
+;; REWRITE for leo--sort-entry-lists-by-part-of-speech
 (defun leo--extract-translations-and-tags (sides &optional words-tags-list)
   "Extract translations and tags from list SIDES.
 Returns nested list of term/tag cons cells, for both languages"
   (while (consp sides)
     (setq words-tags-list
           (cons (list
-                 (leo--extract-words-from-side (car sides)) ;; this is a list now
+                 (leo--extract-words-from-side (car sides)) ;; now a list
                  (leo--extract-tag-from-side (car sides))
                  (leo--extract-plural-from-side (car sides))
                  (leo--extract-flextable-from-side (car sides))
@@ -383,7 +421,8 @@ The search term WORD is propertized in results."
      word)))
 
 (defun leo--inspect-parsed-xml (word)
-  "View the parsed xml returned by a query for WORD."
+  "View the parsed xml returned by a query for WORD.
+The result is also saved to variable leo-xml-inspect-result for playing."
   (interactive "sTranslate: ")
   (let ((xml (leo--parse-xml
               (leo--generate-url leo-language word)))
