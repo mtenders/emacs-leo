@@ -180,13 +180,26 @@ A side is either the source or target result for a given search."
 (defun leo--extract-tag-from-side (side)
   "Extract a term's domain tag from a given SIDE.
 A side is either the source or target result for a given search."
-  (let* ((repr (car (xml-get-children side 'repr)))
-	     (domain (car (xml-get-children repr 'domain)))
-         (small (car (xml-get-children domain 'small)))
-         (m (car (xml-get-children small 'm)))
-         (tag (car (xml-get-children m 't))))
-    (or (caddr tag)
-        ""))) ; handle no tag
+  (let* ((repr (leo--get-child side 'repr)) ;(car (xml-get-children side 'repr)))
+         (lang (leo--extract-lang-from-side side)))
+    (cond ((equal lang "en")
+           (let* (;; key in to en xml tag:
+	              (domain (leo--get-child repr 'domain))
+                  (small-en (leo--get-child domain 'small))
+                  (m-en (leo--get-child small-en 'm))
+                  (tag-en (leo--get-child m-en 't)))
+             (if tag-en
+                 (leo--strip-period-from-tag (caddr tag-en))
+               ""))) ; no tag
+          ((equal lang "de")
+           (let* (;; key in to de xml tag:
+                  (virr (leo--get-child repr 'virr))
+                  (small-de (leo--get-child virr 'small))
+                  (i-de (leo--get-child small-de 'i))
+                  (m-de (leo--get-child i-de 'm))
+                  (tag-de (leo--get-child m-de 't)))
+             (or (caddr tag-de)
+                  "")))))) ;handle no tag
 
 ;; ONLY FOR (DE) NOUNS
 (defun leo--extract-plural-from-side (side)
