@@ -100,6 +100,10 @@ The returned list contains strings of alternating languages"
    (lambda (node) (xml-get-children node child))
    seq))
 
+(defun leo--get-child (tag child)
+    "Why do I fucking have to do this?"
+  (car (xml-get-children tag child)))
+
 (defun leo--extract-cases-from-side (side)
   "Extract a term's case from a given SIDE.
 A side is either the source or target result for a given search."
@@ -112,6 +116,17 @@ A side is either the source or target result for a given search."
                   (caddr x))
                 cases)
         ""))) ; handle no case markers
+(defun leo--extract-lang-from-side (side)
+  "Get the language that SIDE is in."
+  (let ((info (cadr side)))
+    (cdadr info)))
+
+(defun leo--strip--trailing-period (string)
+  "Remove trailing period from STRING."
+  ;;TODO test if it actually ends with a period
+  ;; for now just run it on EN tags, which all seem to
+  ;; & DE case markers
+  (substring string 0 -1))
 
 (defun leo--extract-tag-from-side (side)
   "Extract a term's domain tag from a given SIDE.
@@ -300,6 +315,24 @@ The search term WORD is propertized in results."
      (leo--extract-translation-pairs xml)
      (leo--extract-forum-subject-link-pairs xml)
      word)))
+
+(defun leo--inspect-parsed-xml (word)
+  "View the parsed xml returned by a query for WORD."
+  (interactive "sTranslate: ")
+  (let ((xml (leo--parse-xml
+              (leo--generate-url leo-language word)))
+        (buffer (get-buffer-create "*leo-parsed-xml*")))
+    ;; (with-current-buffer buffer
+    (switch-to-buffer-other-window buffer)
+    (erase-buffer)
+    (goto-char (point-min))
+    (setq inhibit-read-only t)
+      ;; (emacs-lisp-mode)
+    (print xml (current-buffer))
+    (emacs-lisp-mode)
+    (pp-buffer)))
+
+      ;; (pp-buffer))))
 
 ;;;###autoload
 (defun leo-translate-word (word)
