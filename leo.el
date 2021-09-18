@@ -187,6 +187,9 @@ The returned list contains strings of alternating languages"
 ;; NB: this adds more info to EN entries also.
 ;; some of which is useless eg terms announcing alternatives: "also,", "or:", "infinitive:", "pl.:", etc. but the alternative itself does not appear.
 ;; some are v useful tho:  (used with pl. verb) etc.
+;; those accidentally caught markers need their own fun?
+;; i put them in correct order by making cases precede suffixes, hack workaround for now.
+;; cd search for only a specific subset to make precede suffixes also
 (defun leo--extract-cases-from-side (side)
   "Extract a term's case from a given SIDE.
 A side is either the source or target result for a given search."
@@ -247,13 +250,30 @@ Returns a string ."
              (or (cadddr small)
                  "")))
           ((equal lang "de")
-           (let* (;(repr (leo--get-child side 'repr))
-	              (flecttabref (leo--get-child repr 'flecttabref))
+           (let* ((flecttabref (leo--get-child repr 'flecttabref))
                   (small (leo--get-child flecttabref 'small)))
-             ;; (m (car (xml-get-children small 'm)))
-             ;; (tag (car (xml-get-children m 't))))
              (or (cadddr small)
                  "")))))) ; handle no plural
+
+;; EN nouns have these, at the least
+(defun leo--extract-context-marker-from-side (side)
+  "Extract a term's plural form from a given SIDE.
+A side is either the source or target result for a given search.
+Returns a string ."
+  (let* ((repr (leo--get-child side 'repr))
+         (lang (leo--get-lang-from-side side)))
+    (if (equal lang "en")
+        (let* ((small (leo--get-child repr 'small))
+               (i (leo--get-child small 'i)))
+          (if (stringp (caddr i)) ;in case its a bunch more XML instead
+              (or (caddr i)
+                  ""))))))
+          ;; ((equal lang "de")
+           ;; ""))))
+           ;; (let* ((flecttabref (leo--get-child repr 'flecttabref))
+                  ;; (small (leo--get-child flecttabref 'small)))
+             ;; (or (cadddr small)
+                 ;; "")))))) ; handle no plural
 
 ;; ONLY FOR (DE) NOUNS?
 ;; and SOME EN verbs...
@@ -305,6 +325,7 @@ Each side contains the list of words, plus any plural forms, tags, case markers,
         (cons 'pl (leo--extract-plural-from-side side))
         (cons 'tag (leo--extract-tag-from-side side))
         (cons 'case (leo--extract-cases-from-side side))
+        (cons 'context (leo--extract-context-marker-from-side side))
         (cons 'table (leo--extract-flextable-from-side side))))
 
 (defun leo--extract-forum-subject-link-pairs (parsed-xml)
@@ -325,6 +346,7 @@ Returns a nested list of forum posts titles, urls, and teasers."
         (plural (cdr (assoc 'pl (cdr side))))
         (tag (cdr (assoc 'tag (cdr side))))
         (case-marks (cdr (assoc 'case (cdr side))))
+        (context (cdr (assoc 'context (cdr side))))
         (table (cdr (assoc 'table (cdr side)))))
     (insert
      (concat
@@ -340,6 +362,11 @@ Returns a nested list of forum posts titles, urls, and teasers."
                       'help-echo (concat "Browse inflexion table for '"
                                          term "'"))
         term)
+         (if (not (eq case-marks ""))
+          (propertize (concat "("
+                              (mapconcat #'identity case-marks ",")
+                              ") ")
+                      'face 'leo--auxiliary-face))
       (if suffixes
           (propertize suffixes
                       'face 'leo--auxiliary-face))
@@ -357,11 +384,11 @@ Returns a nested list of forum posts titles, urls, and teasers."
       (if (not (eq tag ""))
           (propertize (concat "[" tag "]")
                       'face 'leo--auxiliary-face))
-      (if (not (eq case-marks ""))
-          (propertize (concat "("
-                              (mapconcat #'identity case-marks ",")
-                              ") ")
-                      'face 'leo--auxiliary-face))
+      (if (not (eq context ""))
+          (if (stringp context)
+              (propertize (concat "(" context ")")
+                          'face 'leo--auxiliary-face)))
+
       ;; (if table
           ;; (concat (propertize" | " 'face 'leo--auxiliary-face)
                   ;; (propertize "table"
