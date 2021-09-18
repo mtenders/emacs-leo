@@ -219,9 +219,12 @@ A side is either the source or target result for a given search."
 	              (domain (leo--get-child repr 'domain))
                   (small (leo--get-child domain 'small))
                   (m (leo--get-child small 'm))
-                  (tag (leo--get-child m 't)))
+                  (tag (leo--get-child m 't))
+                  (tag-string (caddr tag)))
              (if tag
-                 (caddr tag) ; (leo--strip-trailing-period (caddr tag))
+                 (if (> (length tag-string) 3) ;3 letter tags have no period?
+                     (leo--strip-trailing-period tag-string)
+                   tag-string)
                ""))) ; no tag
           ((equal lang "de")
            (let* (;; key in to de xml tag:
