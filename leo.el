@@ -185,7 +185,7 @@ The returned list contains strings of alternating languages"
 ;; FAILS FOR PREPS, so have to key in through "entry" in order to test POS
 ;; for now just OR the two nodes: "i" / "sup"
 ;; NB: this adds more info to EN entries also.
-;; some of which is useless eg terms announcing alternatives: "also,", "or:", "infinitive:", "pl.:", etc.
+;; some of which is useless eg terms announcing alternatives: "also,", "or:", "infinitive:", "pl.:", etc. but the alternative itself does not appear.
 ;; some are v useful tho:  (used with pl. verb) etc.
 (defun leo--extract-cases-from-side (side)
   "Extract a term's case from a given SIDE.
@@ -233,19 +233,24 @@ A side is either the source or target result for a given search."
              (or (caddr tag)
                   "")))))) ;handle no tag
 
-;; ONLY FOR (DE) NOUNS?
-;; NB: pl. string always begins w a space
 (defun leo--extract-plural-from-side (side)
   "Extract a term's plural form from a given SIDE.
 A side is either the source or target result for a given search.
 Returns a string ."
   (let* ((repr (leo--get-child side 'repr))
-	     (flecttabref (leo--get-child repr 'flecttabref))
-         (small (leo--get-child flecttabref 'small)))
-         ;; (m (car (xml-get-children small 'm)))
-         ;; (tag (car (xml-get-children m 't))))
-    (or (cadddr small)
-        ""))) ; handle no plural
+         (lang (leo--get-lang-from-side side)))
+    (cond ((equal lang "en")
+           (let ((small (leo--get-child repr 'small)))
+             (or (cadddr small)
+                 "")))
+          ((equal lang "de")
+           (let* (;(repr (leo--get-child side 'repr))
+	              (flecttabref (leo--get-child repr 'flecttabref))
+                  (small (leo--get-child flecttabref 'small)))
+             ;; (m (car (xml-get-children small 'm)))
+             ;; (tag (car (xml-get-children m 't))))
+             (or (cadddr small)
+                 "")))))) ; handle no plural
 
 ;; ONLY FOR (DE) NOUNS?
 ;; and SOME EN verbs...
