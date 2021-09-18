@@ -60,6 +60,14 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
     '((t :inherit font-lock-comment-face))
     "Face used to fade auxiliary items.")
 
+(defface leo--heading-face
+    '((t :inherit font-lock-function-name-face :weight bold))
+    "Face used for POS headings.")
+
+(defface leo--search-and-forum-face
+    '((t :weight bold))
+    "Face used for Search and Forum headings.")
+
 (defface leo--match-face
     '((t :inherit success :weight bold))
     "Face used for search terms in search results.")
@@ -134,7 +142,7 @@ The returned list contains strings of alternating languages"
 (defun leo--get-sides-from-entry (entry)
   (xml-get-children entry 'side))
 
-(defun leo--extract-lang-from-side (side)
+(defun leo--get-lang-from-side (side)
   "Get the language that SIDE is in."
   (xml-get-attribute side 'lang))
 
@@ -142,28 +150,52 @@ The returned list contains strings of alternating languages"
     "Why do I fucking have to do this?"
     (car (xml-get-children tag child)))
 
-(defun leo--extract-words-node-from-side (side)
+(defun leo--get-words-node-from-side (side)
   (xml-get-children side 'words))
 
 (defun leo--extract-word-strings-as-list (words-node)
-  ;; we collect a list to capture spelling variants etc.
+  ;; we collect a list to capture spelling variants, noun phrases, etc.
   (let ((word-node-list (xml-get-children (car words-node) 'word)))
     (mapcar (lambda (x)
               (car (xml-node-children x)))
             word-node-list)))
 
+(defun leo--extract-phrases-from-words-list (words)
+  "Returns a list of term plus any phrasal suffixes or spelling variants from an side's WORDS."
+  ;;("(dependancy)" "(on)" "(dependancy on)" "(dependency)" "(on)")
+  ;; is what it does for combo noun phr + sp variant
+  ;; this wd work if you remove any list entries that = term also.
+  ;; else try to make regex match EITHER following space OR end of str
+  (let* ((term (concat (car words) " "))
+         (suffix-list
+          (mapcar (lambda (x)
+                    (concat "("
+                            (replace-regexp-in-string term "" x)
+                            ")"))
+                  words)))
+    (list (cons 'term term)
+          (cons 'suffixes (cadr suffix-list)))))
+
 (defun leo--extract-words-from-side (side)
-  (leo--extract-word-strings-as-list
-   (leo--extract-words-node-from-side side)))
+  (leo--extract-phrases-from-words-list
+   (leo--extract-word-strings-as-list
+    (leo--get-words-node-from-side side))))
 
 ;; ONLY FOR VERBS & PREPS
+;; FAILS FOR PREPS, so have to key in through "entry" in order to test POS
+;; for now just OR the two nodes: "i" / "sup"
+;; NB: this adds more info to EN entries also.
+;; some of which is useless eg terms announcing alternatives: "also,", "or:", "infinitive:", "pl.:", etc.
+;; some are v useful tho:  (used with pl. verb) etc.
 (defun leo--extract-cases-from-side (side)
   "Extract a term's case from a given SIDE.
 A side is either the source or target result for a given search."
   (let* ((repr (xml-get-children side 'repr))
          (smalls (leo--map-get-children repr 'small))
-         (sups (leo--map-get-children smalls 'sup))
-         (ms (leo--map-get-children sups 'm))
+         (sups-or-is (or (leo--map-get-children smalls 'sup)
+                         (leo--map-get-children smalls 'i)))
+         ;; (sups-or-is (leo--map-get-children smalls 'sup))
+         (ms (leo--map-get-children sups-or-is 'm))
          (cases (leo--map-get-children ms 't)))
     (or (mapcar (lambda (x)
                   (caddr x))
@@ -180,41 +212,43 @@ A side is either the source or target result for a given search."
 (defun leo--extract-tag-from-side (side)
   "Extract a term's domain tag from a given SIDE.
 A side is either the source or target result for a given search."
-  (let* ((repr (leo--get-child side 'repr)) ;(car (xml-get-children side 'repr)))
-         (lang (leo--extract-lang-from-side side)))
+  (let* ((repr (leo--get-child side 'repr))
+         (lang (leo--get-lang-from-side side)))
     (cond ((equal lang "en")
            (let* (;; key in to en xml tag:
 	              (domain (leo--get-child repr 'domain))
-                  (small-en (leo--get-child domain 'small))
-                  (m-en (leo--get-child small-en 'm))
-                  (tag-en (leo--get-child m-en 't)))
-             (if tag-en
-                 (leo--strip-period-from-tag (caddr tag-en))
+                  (small (leo--get-child domain 'small))
+                  (m (leo--get-child small 'm))
+                  (tag (leo--get-child m 't)))
+             (if tag
+                 (caddr tag) ; (leo--strip-trailing-period (caddr tag))
                ""))) ; no tag
           ((equal lang "de")
            (let* (;; key in to de xml tag:
                   (virr (leo--get-child repr 'virr))
-                  (small-de (leo--get-child virr 'small))
-                  (i-de (leo--get-child small-de 'i))
-                  (m-de (leo--get-child i-de 'm))
-                  (tag-de (leo--get-child m-de 't)))
-             (or (caddr tag-de)
+                  (small (leo--get-child virr 'small))
+                  (i (leo--get-child small 'i))
+                  (m (leo--get-child i 'm))
+                  (tag (leo--get-child m 't)))
+             (or (caddr tag)
                   "")))))) ;handle no tag
 
 ;; ONLY FOR (DE) NOUNS?
+;; NB: pl. string always begins w a space
 (defun leo--extract-plural-from-side (side)
   "Extract a term's plural form from a given SIDE.
 A side is either the source or target result for a given search.
 Returns a string ."
-  (let* ((repr (car (xml-get-children side 'repr)))
-	     (flecttabref (car (xml-get-children repr 'flecttabref)))
-         (small (car (xml-get-children flecttabref 'small))))
+  (let* ((repr (leo--get-child side 'repr))
+	     (flecttabref (leo--get-child repr 'flecttabref))
+         (small (leo--get-child flecttabref 'small)))
          ;; (m (car (xml-get-children small 'm)))
          ;; (tag (car (xml-get-children m 't))))
     (or (cadddr small)
         ""))) ; handle no plural
 
-;; ONLY FOR (DE) NOUNS
+;; ONLY FOR (DE) NOUNS?
+;; and SOME EN verbs...
 (defun leo--extract-flextable-from-side (side)
   "Extract the link to a term's inflexion table from a given SIDE.
 A side is either the source or target result for a given search.
@@ -223,72 +257,47 @@ Returns a string ."
          (ibox (car (xml-get-children side 'ibox)))
          (flexmain (car (xml-get-children ibox 'flexmain)))
          (url-suffix (cdr (assoc 'table (car (cdaddr flexmain))))))
-	     ;; (flecttab (car (xml-get-children ibox 'flecttab))) ; NB: DEPRECATED!
-         ;; (url-suffix (cdar (cddr (cadr flecttab)))))
     (if flexmain
         (or (concat base-url url-suffix)
             ""))))
 
+(defun leo--build-sections-list (section-list)
+  "Returns a list of sections, sorted by part of speech and containing entries."
+  (let ((sections (xml-get-children section-list 'section)))
+    (mapcar (lambda (x)
+              (leo--build-section-from-entries x))
+          sections)))
 
-(defun leo--build-list-of-entries-words (entries)
-  "Returns a list of entries, which each contain a two-item lists of the words of each side."
+(defun leo--build-section-from-entries (section)
+  (let ((section-pos (leo--get-section-part-of-speech section)))
+    (list (cons section-pos
+                (leo--build-list-of-entries (leo--get-entries-from-section section))))))
+
+(defun leo--build-list-of-entries (entries)
+  "Returns a list of ENTRIES.
+Each contains two sides, or results in a pair of languages."
   (mapcar (lambda (x)
-            (leo--build-entry-from-sides (leo--get-sides-from-entry x)))
+            (leo--build-entry-from-sides x))
           entries))
 
-;; split this into a side = words plus extra infos (pl., tags etc.)
-;; then entry = cons of sides
-(defun leo--build-entry-from-sides (sides)
-  "Build a two-item list, each containing the list of words for a side, plus any tags, case markers, etc. that it contains."
-  (mapcar (lambda (x)
-            (list (leo--extract-words-from-side x))) ; list to make room for tags etc.
-          sides))
+(defun leo--build-entry-from-sides (entry)
+  "Build an entry, ie a list of two sides."
+  (let ((sides (leo--get-sides-from-entry entry)))
+    (mapcar (lambda (x)
+              (leo--build-side-from-words-and-elements x))
+              sides)))
 
-;; REPLACES leo--extract-translation-pairs and leo--make-entry-from-sides?
-;; MODIFY to allow addition of extra info for each side!!
-;; (defun leo--extract-translation-pairs (parsed-xml) ;for testing
-(defun leo--sort-entry-lists-by-part-of-speech (parsed-xml)
-  "Returns list of lists of sections returned by result PARSED-XML.
-Each section contains first its part of speech as a string, followed by lists of entries.
-The entries contain a list for each language pair, or side. Each side contains a list of terms, followed by additional details such as plural forms, case markers, domain tags, etc."
-  (let* ((sectionlist (leo--get-result-section-list (car parsed-xml)))
-         (sections (leo--get-result-sections-as-list sectionlist))
-         (leo-sections-results nil)) ;clear prev?
-    (while sections
-      (let* ((entries (leo--get-entries-from-section (car sections))))
-        (setq leo-sections-results
-              (cons
-               (cons
-                (leo--get-section-part-of-speech (car sections))
-                (leo--build-list-of-entries-words entries))
-               leo-sections-results)))
-      (pop sections))
-    (reverse leo-sections-results)))
-
-;; re-write for a single SIDE, make a nice list
-;; REWRITE for leo--sort-entry-lists-by-part-of-speech
-(defun leo--extract-translations-and-tags (sides &optional words-tags-list)
-  "Extract translations and tags from list SIDES.
-Returns nested list of term/tag cons cells, for both languages"
-  (while (consp sides)
-    (setq words-tags-list
-          (cons (list
-                 (leo--extract-words-from-side (car sides)) ;; now a list
-                 (leo--extract-tag-from-side (car sides))
-                 (leo--extract-plural-from-side (car sides))
-                 (leo--extract-flextable-from-side (car sides))
-                 (leo--extract-cases-from-side (car sides)))
-                words-tags-list))
-    (pop sides))
-  (reverse words-tags-list))
-
-(defun leo--extract-translation-pairs (parsed-xml)
-  "Extract translation pairs from PARSED-XML."
-  (let* ((sectionlist (leo--map-get-children parsed-xml 'sectionlist))
-	 (section (leo--map-get-children sectionlist 'section))
-	 (entry (leo--map-get-children section 'entry))
-	 (side (leo--map-get-children entry 'side)))
-    (leo--pair-translations (leo--extract-translations-and-tags side))))
+;; TODO: only search for things if the POS has those things
+;; but POS is in ENTRY not SIDE
+;; re-write for an entry and map the list-building
+(defun leo--build-side-from-words-and-elements (side)
+  "Construct a list for SIDE.
+Each side contains the list of words, plus any plural forms, tags, case markers, etc."
+  (list (leo--extract-words-from-side side)
+        (cons 'pl (leo--extract-plural-from-side side))
+        (cons 'tag (leo--extract-tag-from-side side))
+        (cons 'case (leo--extract-cases-from-side side))
+        (cons 'table (leo--extract-flextable-from-side side))))
 
 (defun leo--extract-forum-subject-link-pairs (parsed-xml)
   "Extract forum entry names and links from PARSED-XML.
@@ -302,62 +311,92 @@ Returns a nested list of forum posts titles, urls, and teasers."
                     (nth 2 (nth 3 x)))) ; teaser
                  forumref-link)))
 
-(defun leo--print-translation (pairs)
-  "Format and print translation PAIRS.
-Results include domain tags and plural forms."
-  (let ((src (caaar pairs))
-        (src-tag (cadaar pairs))
-        (src-plr (car (cddaar pairs)))
-        (targ (cadar pairs))
-        (targ-tag (caddar pairs))
-        (targ-plr (car (cdddar pairs)))
-        (flextab-url (cadr (cdddar pairs)))
-        (cases (caddr (cdddar pairs))))
-    (if (null pairs) nil
-      (with-current-buffer (get-buffer " *leo*")
-        (insert
-         (concat
-          (mapconcat #'identity src ", ")
-          ;; src
-          (if (not (eq src-tag ""))
-              (propertize (concat " [" src-tag "]")
-                          'face 'leo--auxiliary-face))
-          (if (not (eq src-plr ""))
-              (propertize (concat " pl." src-plr)
-                          'face 'leo--auxiliary-face))
-          "\n       "
-          (propertize "-> "
-                      'face 'leo--auxiliary-face)
-          (mapconcat #'identity targ ", ")
-          ;targ
-          (if (not (eq targ-tag ""))
-            (propertize (concat " [" targ-tag "]")
-                        'face 'leo--auxiliary-face))
-          (if (not (eq targ-plr ""))
-              (propertize (concat targ-plr)
-                          'button t
-                          'follow-link t
-                          'shr-url flextab-url
-                          'keymap shr-map
-                          'fontified t
-                          'face 'leo--auxiliary-face
-                          'mouse-face 'highlight
-                          'help-echo (concat "Browse inflexion table for '" (car targ) "'")))
-          " "
-          (if (not (eq cases ""))
-              (propertize (concat "(" (mapconcat #'identity cases ", ") ")") 'face 'leo--auxiliary-face ))
-          (propertize " | " 'face 'leo--auxiliary-face)
-          (propertize "table"
+(defun leo--print-single-side (side)
+  (let ((term (cdr (assoc 'term (car side))))
+        (suffixes (cdr (assoc 'suffixes (car side))))
+        (plural (cdr (assoc 'pl (cdr side))))
+        (tag (cdr (assoc 'tag (cdr side))))
+        (case-marks (cdr (assoc 'case (cdr side))))
+        (table (cdr (assoc 'table (cdr side)))))
+    (insert
+     (concat
+      (if table
+          (propertize term
                       'button t
                       'follow-link t
-                      'shr-url flextab-url
+                      'shr-url table
                       'keymap shr-map
                       'fontified t
                       'face 'leo--link-face
                       'mouse-face 'highlight
-                      'help-echo (concat "Browse inflexion table for '" (car targ) "'"))
-          "\n\n")))
-    (leo--print-translation (cdr pairs)))))
+                      'help-echo (concat "Browse inflexion table for '"
+                                         term "'"))
+        term)
+      (if suffixes
+          (propertize suffixes
+                      'face 'leo--auxiliary-face))
+      (if (not (eq plural ""))
+          (propertize plural
+                      'button t
+                      'follow-link t
+                      'shr-url table
+                      'keymap shr-map
+                      'fontified t
+                      'face 'leo--auxiliary-face
+                      'mouse-face 'highlight
+                      'help-echo (concat "Browse inflexion table for '"
+                                         term "'")))
+      (if (not (eq tag ""))
+          (propertize (concat "[" tag "]")
+                      'face 'leo--auxiliary-face))
+      (if (not (eq case-marks ""))
+          (propertize (concat "("
+                              (mapconcat #'identity case-marks ",")
+                              ") ")
+                      'face 'leo--auxiliary-face))
+      ;; (if table
+          ;; (concat (propertize" | " 'face 'leo--auxiliary-face)
+                  ;; (propertize "table"
+                      ;; 'button t
+                      ;; 'follow-link t
+                      ;; 'shr-url table
+                      ;; 'keymap shr-map
+                      ;; 'fontified t
+                      ;; 'face 'leo--auxiliary-face
+                      ;; 'mouse-face 'highlight
+                      ;; 'help-echo (concat "Browse inflexion table for '"
+                                         ;; term "'"))))
+      ))))
+
+(defun leo--print-single-entry (entry)
+  (leo--print-single-side (car entry))
+  (insert
+   (concat
+    "\n           "
+    (propertize "--> "
+                'face 'leo--auxiliary-face)))
+  (leo--print-single-side (cadr entry))
+  (insert "\n\n"))
+
+(defun leo--print-single-section (section)
+  (let ((section-pos (caar section))
+        (section-entries (cdar section)))
+    (insert
+     (propertize section-pos
+                 'face 'leo--heading-face)
+     "\n\n")
+    (mapcar (lambda (x)
+              (leo--print-single-entry x))
+            section-entries)))
+
+(defun leo--print-translation (results)
+  "Format and print translation PAIRS.
+Results include domain tags and plural forms."
+  (if (null results) nil
+    (with-current-buffer (get-buffer " *leo*")
+      (mapcar (lambda (x)
+                (leo--print-single-section x))
+              results))))
 
 (defun leo--print-forums (forum-posts)
   "Format and print translation FORUM-POSTS."
@@ -396,12 +435,12 @@ Results include domain tags and plural forms."
         (add-text-properties (- (point) (length word)) (point)
                              '(face leo--match-face))))))
 
-(defun leo--open-translation-buffer (pairs forums word)
+(defun leo--open-translation-buffer (results forums word)
   "Print translation PAIRS and FORUMS in temporary buffer.
 The search term WORD is propertized in results."
   (with-output-to-temp-buffer " *leo*"
     (princ (concat "leo.de search results for " word ":\n\n"))
-    (leo--print-translation pairs)
+    (leo--print-translation results)
     (princ (concat "\n\nleo.de forum results for " word ":\n\n"))
     (leo--print-forums forums))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
@@ -413,28 +452,14 @@ The search term WORD is propertized in results."
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
-  (let ((xml (leo--parse-xml
-              (leo--generate-url lang word))))
+  (let* ((xml (leo--parse-xml
+              (leo--generate-url lang word)))
+         (section-list (car (leo--get-result-section-list (car xml)))))
     (leo--open-translation-buffer
-     (leo--extract-translation-pairs xml)
+     (leo--build-sections-list section-list)
+     ;; (leo--extract-translation-pairs xml)
      (leo--extract-forum-subject-link-pairs xml)
      word)))
-
-(defun leo--inspect-parsed-xml (word)
-  "View the parsed xml returned by a query for WORD.
-The result is also saved to variable leo-xml-inspect-result for playing."
-  (interactive "sTranslate: ")
-  (let ((xml (leo--parse-xml
-              (leo--generate-url leo-language word)))
-        (buffer (get-buffer-create "*leo-parsed-xml*")))
-    (switch-to-buffer-other-window buffer)
-    (erase-buffer)
-    (goto-char (point-min))
-    (setq inhibit-read-only t)
-    (print xml (current-buffer))
-    (emacs-lisp-mode)
-    (pp-buffer)
-    (setq leo-xml-inspect-result xml)))
 
 ;;;###autoload
 (defun leo-translate-word (word)
