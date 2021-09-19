@@ -201,16 +201,16 @@ A side is either the source or target result for a given search."
          (ms (leo--map-get-children sups-or-is 'm))
          (cases (leo--map-get-children ms 't)))
     (or (mapcar (lambda (x)
-                  (caddr x))
+                  (leo--strip-trailing-period
+                  (caddr x)))
                 cases)
         ""))) ; handle no case markers
 
 (defun leo--strip-trailing-period (string)
-  "Remove trailing period from STRING."
-  ;;TODO test if it actually ends with a period!
-  ;; for now just run it on EN tags, which all seem to.
-  ;; & DE case markers
-  (substring string 0 -1))
+  "Remove trailing period from STRING if it has one."
+  (if (string-match "\\.$" string)
+      (substring string 0 -1)
+    string))
 
 (defun leo--extract-tag-from-side (side)
   "Extract a term's domain tag from a given SIDE.
@@ -225,10 +225,9 @@ A side is either the source or target result for a given search."
                   (tag (leo--get-child m 't))
                   (tag-string (caddr tag)))
              (if tag
-                 (if (> (length tag-string) 3) ;3 letter tags have no period?
-                     (leo--strip-trailing-period tag-string)
-                   tag-string)
-               ""))) ; no tag
+                 (leo--strip-trailing-period tag-string)
+               ;""
+               ))) ; no tag
           ((equal lang "de")
            (let* (;; key in to de xml tag:
                   (virr (leo--get-child repr 'virr))
