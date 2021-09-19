@@ -316,23 +316,39 @@ Each contains two sides, or results in a pair of languages."
 
 (defun leo--build-entry-from-sides (entry)
   "Build an entry, ie a list of two sides."
-  (let ((sides (leo--get-sides-from-entry entry)))
+  (let ((pos (leo--get-entry-part-of-speech entry))
+        (sides (leo--get-sides-from-entry entry)))
     (mapcar (lambda (x)
-              (leo--build-side-from-words-and-elements x))
-              sides)))
-
-;; TODO: only search for things if the POS has those things
-;; but POS is in ENTRY not SIDE
-;; re-write for an entry and map the list-building
-(defun leo--build-side-from-words-and-elements (side)
-  "Construct a list for SIDE.
-Each side contains the list of words, plus any plural forms, tags, case markers, etc."
-  (list (leo--extract-words-from-side side)
-        (cons 'pl (leo--extract-plural-from-side side))
-        (cons 'tag (leo--extract-tag-from-side side))
-        (cons 'case (leo--extract-cases-from-side side))
-        (cons 'context (leo--extract-context-marker-from-side side))
-        (cons 'table (leo--extract-flextable-from-side side))))
+              (cond ((equal pos "noun")
+                     (list (leo--extract-words-from-side x)
+                           (cons 'pl (leo--extract-plural-from-side x))
+                           (cons 'tag (leo--extract-tag-from-side x))
+                           ;; (cons 'case (leo--extract-cases-from-side x))
+                           (cons 'context (leo--extract-context-marker-from-side x))
+                           (cons 'table (leo--extract-flextable-from-side x))))
+                    ((equal pos "verb")
+                     (list (leo--extract-words-from-side x)
+                           ;; (cons 'pl (leo--extract-plural-from-side x))
+                           (cons 'tag (leo--extract-tag-from-side x))
+                           (cons 'case (leo--extract-cases-from-side x))
+                           (cons 'context (leo--extract-context-marker-from-side x))
+                           (cons 'table (leo--extract-flextable-from-side x))))
+                     ((equal pos "adjective")
+                      (list (leo--extract-words-from-side x)
+                            (cons 'pl (leo--extract-plural-from-side x))
+                            (cons 'tag (leo--extract-tag-from-side x))
+                            ;; (cons 'case (leo--extract-cases-from-side x))
+                            (cons 'context (leo--extract-context-marker-from-side x))
+                            (cons 'table (leo--extract-flextable-from-side x))))
+                     ;; FIXME Add other entry types
+                      (t ; a generic entry
+                        (list (leo--extract-words-from-side x)
+                            (cons 'pl (leo--extract-plural-from-side x))
+                            (cons 'tag (leo--extract-tag-from-side x))
+                            (cons 'case (leo--extract-cases-from-side x))
+                            (cons 'context (leo--extract-context-marker-from-side x))
+                            (cons 'table (leo--extract-flextable-from-side x))))))
+            sides)))
 
 (defun leo--extract-forum-subject-link-pairs (parsed-xml)
   "Extract forum entry names and links from PARSED-XML.
