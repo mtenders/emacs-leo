@@ -161,20 +161,14 @@ The returned list contains strings of alternating languages"
             word-node-list)))
 
 (defun leo--extract-phrases-from-words-list (words)
-  "Returns a list of term plus any phrasal suffixes or spelling variants from an side's WORDS."
-  ;;("(dependancy)" "(on)" "(dependancy on)" "(dependency)" "(on)")
-  ;; is what it does for combo noun phr + sp variant
-  ;; this wd work if you remove any list entries that = term also.
-  ;; else try to make regex match EITHER following space OR end of str
-  (let* ((term (concat (car words) " "))
+  "Returns a list of term plus any phrasal suffixes or variants from an side's WORDS."
+  (let* ((term (car words))
          (suffix-list
           (mapcar (lambda (x)
-                    (concat "("
-                            (replace-regexp-in-string term "" x)
-                            ")"))
+                    (replace-regexp-in-string (concat term " ") "" x))
                   words)))
     (list (cons 'term term)
-          (cons 'suffixes (cadr suffix-list)))))
+          (cons 'suffixes (delete term (cdr suffix-list))))))
 
 (defun leo--extract-words-from-side (side)
   (leo--extract-phrases-from-words-list
@@ -184,7 +178,7 @@ The returned list contains strings of alternating languages"
 ;; ONLY FOR VERBS & PREPS
 ;; FAILS FOR PREPS, so have to key in through "entry" in order to test POS
 ;; for now just OR the two nodes: "i" / "sup"
-;; NB: this adds more info to EN entries also.
+;; NB: this adds more info to EN (noun) entries also.
 ;; some of which is useless eg terms announcing alternatives: "also,", "or:", "infinitive:", "pl.:", etc. but the alternative itself does not appear.
 ;; some are v useful tho:  (used with pl. verb) etc.
 ;; those accidentally caught markers need their own fun?
@@ -202,7 +196,7 @@ A side is either the source or target result for a given search."
          (cases (leo--map-get-children ms 't)))
     (or (mapcar (lambda (x)
                   (leo--strip-trailing-period
-                  (caddr x)))
+                   (caddr x)))
                 cases)
         ;""
         ))) ; handle no case markers
@@ -399,9 +393,9 @@ Returns a nested list of forum posts titles, urls, and teasers."
                               (mapconcat #'identity case-marks ",")
                               ") ")
                       'face 'leo--auxiliary-face))
-      (if (and suffixes
-               (stringp suffixes))
-          (propertize suffixes
+      (if suffixes
+          (propertize (concat " "
+                              (mapconcat #'identity suffixes ", "))
                       'face 'leo--auxiliary-face))
       (if (and plural
                (stringp plural))
@@ -467,7 +461,8 @@ Results include domain tags and plural forms."
                         'fontified t
                         'face 'leo--link-face
                         'mouse-face 'highlight
-                        'help-echo (concat "Browse forum entry for '" (caar forum-posts) "'")))
+                        'help-echo (concat "Browse forum entry for '"
+                                           (caar forum-posts) "'")))
            (teaser
             (propertize (nth 2 (car forum-posts))
                         'face 'leo--auxiliary-face)))
