@@ -362,17 +362,15 @@ Returns a nested list of forum posts titles, urls, and teasers."
 
 (defun leo--print-single-side (side)
   (let* ((term (cdr (assoc 'term (car side))))
-         ;; TODO remove trailing space from term
-        (suffixes (cdr (assoc 'suffixes (car side))))
-        (plural-full (cdr (assoc 'pl (cdr side))))
-        ;remove initial space from plurals:
-        (plural (if (and (stringp plural-full)
-                         (string-match "^[ ]+" plural-full))
-                    (substring plural-full 1 nil)))
-        (tag (cdr (assoc 'tag (cdr side))))
-        (case-marks (cdr (assoc 'case (cdr side))))
-        (context (cdr (assoc 'context (cdr side))))
-        (table (cdr (assoc 'table (cdr side)))))
+         (suffixes (cdr (assoc 'suffixes (car side))))
+         (plural-full (cdr (assoc 'pl (cdr side))))
+         (plural (if (and (stringp plural-full)
+                          (string-match "^[ ]+" plural-full))
+                     (substring plural-full 1 nil)))
+         (tag (cdr (assoc 'tag (cdr side))))
+         (case-marks (cdr (assoc 'cases (cdr side))))
+         (context (cdr (assoc 'context (cdr side))))
+         (table (cdr (assoc 'table (cdr side)))))
     (insert
      (concat
       (if table
@@ -387,10 +385,9 @@ Returns a nested list of forum posts titles, urls, and teasers."
                       'help-echo (concat "Browse inflexion table for '"
                                          term "'"))
         term)
-      (if (and case-marks
-               (stringp case-marks))
-          (propertize (concat "("
-                              (mapconcat #'identity case-marks ",")
+      (if case-marks
+          (propertize (concat " ("
+                              (mapconcat #'identity case-marks ", ")
                               ") ")
                       'face 'leo--auxiliary-face))
       (if suffixes
@@ -399,7 +396,7 @@ Returns a nested list of forum posts titles, urls, and teasers."
                       'face 'leo--auxiliary-face))
       (if (and plural
                (stringp plural))
-          (propertize plural
+          (propertize (concat " " plural)
                       'button t
                       'follow-link t
                       'shr-url table
@@ -411,11 +408,11 @@ Returns a nested list of forum posts titles, urls, and teasers."
                                          term "'")))
       (if (and tag
                (stringp tag))
-          (propertize (concat "[" tag "]")
+          (propertize (concat " [" tag "]")
                       'face 'leo--auxiliary-face))
       (if (and context
                (stringp context))
-              (propertize (concat "(" context ")")
+              (propertize (concat " {" context "}")
                           'face 'leo--auxiliary-face))))))
 
 (defun leo--print-single-entry (entry)
