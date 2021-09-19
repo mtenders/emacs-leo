@@ -175,31 +175,43 @@ The returned list contains strings of alternating languages"
    (leo--extract-word-strings-as-list
     (leo--get-words-node-from-side side))))
 
-;; ONLY FOR VERBS & PREPS
-;; FAILS FOR PREPS, so have to key in through "entry" in order to test POS
-;; for now just OR the two nodes: "i" / "sup"
-;; NB: this adds more info to EN (noun) entries also.
-;; some of which is useless eg terms announcing alternatives: "also,", "or:", "infinitive:", "pl.:", etc. but the alternative itself does not appear.
-;; some are v useful tho:  (used with pl. verb) etc.
-;; those accidentally caught markers need their own fun?
-;; i put them in correct order by making cases precede suffixes, hack workaround for now.
-;; cd search for only a specific subset to make precede suffixes also
+;; ONLY FOR VERBS
 (defun leo--extract-cases-from-side (side)
   "Extract a term's case from a given SIDE.
 A side is either the source or target result for a given search."
   (let* ((repr (xml-get-children side 'repr))
          (smalls (leo--map-get-children repr 'small))
-         (sups-or-is (or (leo--map-get-children smalls 'sup)
-                         (leo--map-get-children smalls 'i)))
-         ;; (sups-or-is (leo--map-get-children smalls 'sup))
-         (ms (leo--map-get-children sups-or-is 'm))
+         (sups (leo--map-get-children smalls 'sup))
+         (ms (leo--map-get-children sups 'm))
          (cases (leo--map-get-children ms 't)))
-    (or (mapcar (lambda (x)
-                  (leo--strip-trailing-period
-                   (caddr x)))
-                cases)
-        ;""
-        ))) ; handle no case markers
+    (mapcar (lambda (x)
+              (leo--strip-trailing-period
+               (caddr x)))
+            cases)))
+
+;; for PREPS, ADJ, ADV:
+(defun leo--extract-cases-and-pos-from-side (side)
+  "Extract a term's case from a given SIDE.
+A side is either the source or target result for a given search."
+  (let* ((repr (xml-get-children side 'repr))
+         (smalls (leo--map-get-children repr 'small))
+         (is (leo--map-get-children smalls 'i))
+         (ms (leo--map-get-children is 'm))
+         (ts (leo--map-get-children ms 't))
+         (cases-and-pos (mapcar (lambda (x)
+                                  (leo--strip-trailing-period
+                                   (caddr x)))
+                                ts)))
+    ;; awful hack to display POS before anything else:
+    (if (> (length cases-and-pos) 1)
+        (let* ((pos '("adv" "adj" "Präp"))
+               (intersect (seq-intersection cases-and-pos pos)))
+          (if intersect
+              (car
+                    (mapcar (lambda (x)
+                              (let ((culled (delete x cases-and-pos)))
+                                (cons x culled)))
+                            intersect)))))))
 
 (defun leo--strip-trailing-period (string)
   "Remove trailing period from STRING if it has one."
@@ -219,18 +231,14 @@ A side is either the source or target result for a given search."
                   (tag (leo--get-child m 't))
                   (tag-string (caddr tag)))
              (if tag
-                 (leo--strip-trailing-period tag-string)
-               ;""
-               ))) ; no tag
+                 (leo--strip-trailing-period tag-string))))
           ((equal lang "de")
            (let* ((virr (leo--get-child repr 'virr))
                   (small (leo--get-child virr 'small))
                   (i (leo--get-child small 'i))
                   (m (leo--get-child i 'm))
                   (tag (leo--get-child m 't)))
-             (or (caddr tag)
-                 ;""
-                 )))))) ;handle no tag
+             (caddr tag))))))
 
 (defun leo--extract-plural-from-side (side)
   "Extract a term's plural form from a given SIDE.
@@ -245,24 +253,21 @@ Returns a string ."
           ((equal lang "de")
            (let* ((flecttabref (leo--get-child repr 'flecttabref))
                   (small (leo--get-child flecttabref 'small)))
-             (or (cadddr small)
-                 ;""
-                 )))))) ; handle no plural
+             (cadddr small))))))
 
 ;; EN nouns have these, at the least
 (defun leo--extract-context-marker-from-side (side)
-  "Extract a term's plural form from a given SIDE.
+  "Extract a term's context marker from a given SIDE.
 A side is either the source or target result for a given search.
-Returns a string ."
+Returns a string."
   (let* ((repr (leo--get-child side 'repr))
          (lang (leo--get-lang-from-side side)))
     (if (equal lang "en")
         (let* ((small (leo--get-child repr 'small))
                (i (leo--get-child small 'i)))
           (if (stringp (caddr i)) ;in case its a bunch more XML instead
-              (or (caddr i)
-                  ;"":
-                  ))))))
+              (caddr i)
+                  )))))
           ;; ((equal lang "de")
            ;; ""))))
            ;; (let* ((flecttabref (leo--get-child repr 'flecttabref))
@@ -338,7 +343,7 @@ Each contains two sides, or results in a pair of languages."
                     ((string= pos "preposition")
                      (list (leo--extract-words-from-side x)
                            (cons 'tag (leo--extract-tag-from-side x))
-                           (cons 'cases (leo--extract-cases-from-side x))
+                           (cons 'cases (leo--extract-cases-and-pos-from-side x))
                            ;; (cons 'context (leo--extract-context-marker-from-side x))
                            (cons 'table (leo--extract-flextable-from-side x))))
                     ;; FIXME Add other entry types
