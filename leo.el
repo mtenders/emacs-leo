@@ -204,7 +204,8 @@ A side is either the source or target result for a given search."
                   (leo--strip-trailing-period
                   (caddr x)))
                 cases)
-        ""))) ; handle no case markers
+        ;""
+        ))) ; handle no case markers
 
 (defun leo--strip-trailing-period (string)
   "Remove trailing period from STRING if it has one."
@@ -218,8 +219,7 @@ A side is either the source or target result for a given search."
   (let* ((repr (leo--get-child side 'repr))
          (lang (leo--get-lang-from-side side)))
     (cond ((equal lang "en")
-           (let* (;; key in to en xml tag:
-	              (domain (leo--get-child repr 'domain))
+           (let* ((domain (leo--get-child repr 'domain))
                   (small (leo--get-child domain 'small))
                   (m (leo--get-child small 'm))
                   (tag (leo--get-child m 't))
@@ -229,14 +229,14 @@ A side is either the source or target result for a given search."
                ;""
                ))) ; no tag
           ((equal lang "de")
-           (let* (;; key in to de xml tag:
-                  (virr (leo--get-child repr 'virr))
+           (let* ((virr (leo--get-child repr 'virr))
                   (small (leo--get-child virr 'small))
                   (i (leo--get-child small 'i))
                   (m (leo--get-child i 'm))
                   (tag (leo--get-child m 't)))
              (or (caddr tag)
-                  "")))))) ;handle no tag
+                 ;""
+                 )))))) ;handle no tag
 
 (defun leo--extract-plural-from-side (side)
   "Extract a term's plural form from a given SIDE.
@@ -252,7 +252,8 @@ Returns a string ."
            (let* ((flecttabref (leo--get-child repr 'flecttabref))
                   (small (leo--get-child flecttabref 'small)))
              (or (cadddr small)
-                 "")))))) ; handle no plural
+                 ;""
+                 )))))) ; handle no plural
 
 ;; EN nouns have these, at the least
 (defun leo--extract-context-marker-from-side (side)
@@ -266,7 +267,8 @@ Returns a string ."
                (i (leo--get-child small 'i)))
           (if (stringp (caddr i)) ;in case its a bunch more XML instead
               (or (caddr i)
-                  ""))))))
+                  ;"":
+                  ))))))
           ;; ((equal lang "de")
            ;; ""))))
            ;; (let* ((flecttabref (leo--get-child repr 'flecttabref))
@@ -286,7 +288,12 @@ Returns a string ."
          (url-suffix (cdr (assoc 'table (car (cdaddr flexmain))))))
     (if flexmain
         (or (concat base-url url-suffix)
-            ""))))
+            ;""
+            ))))
+
+
+
+;;; BUILDING RESULTS LISTS
 
 (defun leo--build-sections-list (section-list)
   "Returns a list of sections, sorted by part of speech and containing entries."
@@ -339,10 +346,19 @@ Returns a nested list of forum posts titles, urls, and teasers."
                     (nth 2 (nth 3 x)))) ; teaser
                  forumref-link)))
 
+
+
+;;; PRINTING
+
 (defun leo--print-single-side (side)
-  (let ((term (cdr (assoc 'term (car side))))
+  (let* ((term (cdr (assoc 'term (car side))))
+         ;; TODO remove trailing space from term
         (suffixes (cdr (assoc 'suffixes (car side))))
-        (plural (cdr (assoc 'pl (cdr side))))
+        (plural-full (cdr (assoc 'pl (cdr side))))
+        ;remove initial space from plurals:
+        (plural (if (and (stringp plural-full)
+                         (string-match "^[ ]+" plural-full))
+                    (substring plural-full 1 nil)))
         (tag (cdr (assoc 'tag (cdr side))))
         (case-marks (cdr (assoc 'case (cdr side))))
         (context (cdr (assoc 'context (cdr side))))
@@ -361,15 +377,18 @@ Returns a nested list of forum posts titles, urls, and teasers."
                       'help-echo (concat "Browse inflexion table for '"
                                          term "'"))
         term)
-         (if (not (eq case-marks ""))
+      (if (and case-marks
+               (stringp case-marks))
           (propertize (concat "("
                               (mapconcat #'identity case-marks ",")
                               ") ")
                       'face 'leo--auxiliary-face))
-      (if suffixes
+      (if (and suffixes
+               (stringp suffixes))
           (propertize suffixes
                       'face 'leo--auxiliary-face))
-      (if (not (eq plural ""))
+      (if (and plural
+               (stringp plural))
           (propertize plural
                       'button t
                       'follow-link t
@@ -380,27 +399,14 @@ Returns a nested list of forum posts titles, urls, and teasers."
                       'mouse-face 'highlight
                       'help-echo (concat "Browse inflexion table for '"
                                          term "'")))
-      (if (not (eq tag ""))
+      (if (and tag
+               (stringp tag))
           (propertize (concat "[" tag "]")
                       'face 'leo--auxiliary-face))
-      (if (not (eq context ""))
-          (if (stringp context)
+      (if (and context
+               (stringp context))
               (propertize (concat "(" context ")")
-                          'face 'leo--auxiliary-face)))
-
-      ;; (if table
-          ;; (concat (propertize" | " 'face 'leo--auxiliary-face)
-                  ;; (propertize "table"
-                      ;; 'button t
-                      ;; 'follow-link t
-                      ;; 'shr-url table
-                      ;; 'keymap shr-map
-                      ;; 'fontified t
-                      ;; 'face 'leo--auxiliary-face
-                      ;; 'mouse-face 'highlight
-                      ;; 'help-echo (concat "Browse inflexion table for '"
-                                         ;; term "'"))))
-      ))))
+                          'face 'leo--auxiliary-face))))))
 
 (defun leo--print-single-entry (entry)
   (leo--print-single-side (car entry))
