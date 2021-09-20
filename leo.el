@@ -405,6 +405,12 @@ Each contains two sides, or results in a pair of languages."
 
 ;;; PRINTING
 
+(defvar leo-click-map
+  ;; (let ((map (make-sparse-keymap)))
+  (let ((map (copy-keymap shr-map)))
+    (define-key map [mouse-2] 'leo--translate-word-click-search)
+    map))
+
 (defun leo--print-single-side (side)
   (let* ((term (cdr (assoc 'term (car side))))
          (suffixes (cdr (assoc 'suffixes (car side))))
@@ -420,24 +426,19 @@ Each contains two sides, or results in a pair of languages."
          (table (cdr (assoc 'table (cdr side)))))
     (insert
      (concat
-      (if table
-          (propertize term
-                      'button t
-                      'follow-link t
-                      'shr-url table
-                      'keymap shr-map
-                      'fontified t
-                      'face 'leo--link-face
-                      'mouse-face 'highlight
-                      'help-echo (concat "Browse inflexion table for '"
-                                         term "'"))
-        term)
+      (propertize term
+                  'button t
+                  'follow-link t
+                  'keymap leo-click-map
+                  'fontified t
+                  'face 'leo--link-face
+                  'mouse-face 'highlight
+                  'help-echo (concat "Click to search leo for this term"))
       (if case-marks
           (propertize (concat " ("
                               (mapconcat #'identity case-marks ", ")
                               ")")
                       'face 'leo--auxiliary-face))
-
       (if tags
           (propertize (concat " ("
                               (mapconcat #'identity tags ", ")
@@ -452,7 +453,8 @@ Each contains two sides, or results in a pair of languages."
                       'face 'leo--auxiliary-face))
       (if (and plural
                (stringp plural))
-          (propertize (concat " " plural)
+          (concat " "
+          (propertize plural
                       'button t
                       'follow-link t
                       'shr-url table
@@ -461,7 +463,7 @@ Each contains two sides, or results in a pair of languages."
                       'face 'leo--auxiliary-face
                       'mouse-face 'highlight
                       'help-echo (concat "Browse inflexion table for '"
-                                         term "'")))
+                                         term "'"))))
       (if (and domain
                (stringp domain))
           (propertize (concat " [" domain "]")
