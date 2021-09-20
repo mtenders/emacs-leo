@@ -594,6 +594,8 @@ The search term WORD is propertized in results."
       (other-window 1))
   (let ((inhibit-read-only t))
     (leo--propertize-search-term-in-results word))
+  ;; hack to not ruin help-mode bindings, till we have a minor mode:
+  (use-local-map (copy-keymap (current-local-map)))
   (local-set-key (kbd "<tab>") 'shr-next-link)
   (local-set-key (kbd "<backtab>") 'shr-previous-link)
   (local-set-key (kbd "t") 'leo-translate-word)
