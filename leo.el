@@ -237,10 +237,10 @@ Tags include register (eg 'coll' or 'fig') and helper markers like 'also.', 'or:
       (substring string 0 -1)
     string))
 
-(defun leo--extract-domain-from-side (side)
-  "Extract a term's domain from a given SIDE.
+(defun leo--extract-domains-from-side (side)
+  "Extract a term's domains from a given SIDE.
 A side is either the source or target result for a given search."
-  (let* ((repr (leo--get-child side 'repr))
+  (let* ((repr (xml-get-children side 'repr))
          (lang (leo--get-lang-from-side side)))
     (cond ((equal lang "de")
            (let* ((virr (leo--get-child repr 'virr))
@@ -250,13 +250,14 @@ A side is either the source or target result for a given search."
                   (tag (leo--get-child m 't)))
              (caddr tag)))
           (t ; en and fr work like this at least
-           (let* ((domain (leo--get-child repr 'domain))
-                  (small (leo--get-child domain 'small))
-                  (m (leo--get-child small 'm))
-                  (tag (leo--get-child m 't))
-                  (tag-string (caddr tag)))
-             (if tag
-                 (leo--strip-trailing-period tag-string)))))))
+           (let* ((domains (leo--map-get-children repr 'domain))
+                  (smalls (leo--map-get-children domains 'small))
+                  (ms (leo--map-get-children smalls 'm))
+                  (tags (leo--map-get-children ms 't)))
+             (if tags
+                 (mapcar (lambda (x)
+                           (leo--strip-trailing-period (caddr x)))
+                         tags)))))))
 
 (defun leo--extract-plural-from-side (side)
   "Extract a term's plural form from a given SIDE.
@@ -361,7 +362,7 @@ Each contains two sides, or results in a pair of languages."
               (cond ((string= pos "noun")
                      (list (leo--extract-words-from-side x)
                            (cons 'pl (leo--extract-plural-from-side x))
-                           (cons 'domain (leo--extract-domain-from-side x))
+                           (cons 'domains (leo--extract-domains-from-side x))
                            (cons 'tags (leo--extract-tags-from-side x))
                            (cons 'abbrev (leo--extract-abbrev-from-side x))
                            (cons 'context (leo--extract-context-marker-from-side x))
@@ -369,7 +370,7 @@ Each contains two sides, or results in a pair of languages."
                     ((string= pos "verb")
                      (list (leo--extract-words-from-side x)
                            ;; (cons 'pl (leo--extract-plural-from-side x))
-                           (cons 'domain (leo--extract-domain-from-side x))
+                           (cons 'domains (leo--extract-domains-from-side x))
                            (cons 'abbrev (leo--extract-abbrev-from-side x))
                            (cons 'cases (leo--extract-cases-from-side x))
                            ;; (cons 'context (leo--extract-context-marker-from-side x))
@@ -378,14 +379,14 @@ Each contains two sides, or results in a pair of languages."
                              (string= pos     "adverb"))
                          (list (leo--extract-words-from-side x)
                                ;; (cons 'pl (leo--extract-plural-from-side x))
-                               (cons 'domain (leo--extract-domain-from-side x))
+                               (cons 'domains (leo--extract-domains-from-side x))
                                (cons 'cases (leo--extract-tags-cases-and-pos-from-side x))
                                (cons 'abbrev (leo--extract-abbrev-from-side x))
                                ;; (cons 'context (leo--extract-context-marker-from-side x))
                                (cons 'table (leo--extract-flextable-from-side x)))))
                     ((string= pos "preposition")
                      (list (leo--extract-words-from-side x)
-                           (cons 'domain (leo--extract-domain-from-side x))
+                           (cons 'domains (leo--extract-domains-from-side x))
                            (cons 'cases (leo--extract-tags-cases-and-pos-from-side x))
                            (cons 'abbrev (leo--extract-abbrev-from-side x))
                            ;; (cons 'context (leo--extract-context-marker-from-side x))
@@ -395,7 +396,7 @@ Each contains two sides, or results in a pair of languages."
                     (t ; a generic entry
                      (list (leo--extract-words-from-side x)
                            (cons 'pl (leo--extract-plural-from-side x))
-                           (cons 'domain (leo--extract-domain-from-side x))
+                           (cons 'domains (leo--extract-domains-from-side x))
                            (cons 'cases (leo--extract-cases-from-side x))
                            (cons 'abbrev (leo--extract-abbrev-from-side x))
                            ;; (cons 'context (leo--extract-context-marker-from-side x))
@@ -420,7 +421,7 @@ Each contains two sides, or results in a pair of languages."
                           (string-match "^[ ]+" plural-full))
                      (substring plural-full 1 nil)))
          (tags (cdr (assoc 'tags (cdr side))))
-         (domain (cdr (assoc 'domain (cdr side))))
+         (domains (cdr (assoc 'domains (cdr side))))
          (case-marks (cdr (assoc 'cases (cdr side))))
          (abbrev (cdr (assoc 'abbrev (cdr side))))
          (context (cdr (assoc 'context (cdr side))))
@@ -465,10 +466,11 @@ Each contains two sides, or results in a pair of languages."
                       'mouse-face 'highlight
                       'help-echo (concat "Browse inflexion table for '"
                                          term "'"))))
-      (if (and domain
-               (stringp domain))
-          (propertize (concat " [" domain "]")
-                      'face 'leo--auxiliary-face))
+      (if domains
+               (propertize (concat " ["
+                                   (mapconcat #'identity domains ",")
+                                   "]")
+                           'face 'leo--auxiliary-face))
       (if context
           (propertize (concat " {"
                               (mapconcat #'identity context ", ")
@@ -613,7 +615,8 @@ The search term WORD is propertized in results."
   "Translate WORD from language set by 'leo-language' to German.
 Show translations in new buffer window."
   (interactive "sTranslate: ")
-  (leo--translate leo-language word))
+  (leo--translate leo-language word)
+  (message "Hit 't' to search again."))
 
 ;;;###autoload
 (defun leo-translate-at-point ()
