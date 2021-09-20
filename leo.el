@@ -278,21 +278,22 @@ Returns a string ."
 A context marker disambiguates what particular meaning of a term is being used for a result."
   (let* ((repr (xml-get-children side 'repr))
          (lang (leo--get-lang-from-side side)))
-    ;; (if (equal lang "en")
-    (let* ((smalls (leo--map-get-children repr 'small))
-           (is (leo--map-get-children smalls 'i)))
-      (remove nil ; cull nils from our mapping
-      (mapcar (lambda (x)
-                (if (stringp (caddr x))
-                    ;;in case we get a bunch more XML instead
-                    (if (> (length (caddr x)) 1)
-                        ;; in case we get a ] as part of a tag
-                        (caddr x))))
-              is)))))
-          ;; ((equal lang "de")
-           ;; (let* ((flecttabref (leo--get-child repr 'flecttabref))
-                  ;; (small (leo--get-child flecttabref 'small)))
-             ;; (or (cadddr small))))))) ; handle no plural
+    (cond ((equal lang "de")
+           (let* ((flecttabref (leo--get-child repr 'flecttabref))
+                  (small (leo--get-child flecttabref 'small)))
+             (cadddr small)))
+          (t ;; (if (equal lang "en")
+           (let* ((smalls (leo--map-get-children repr 'small))
+                  (is (leo--map-get-children smalls 'i)))
+             (remove nil ; cull nils from our mapping
+                     (mapcar (lambda (x)
+                               (if (stringp (caddr x))
+                                   ;;in case we get a bunch more XML instead
+                                   (if (> (length (caddr x)) 1)
+                                       ;; in case we get a ] as part of a tag
+                                       (caddr x))))
+                             is)))))))
+
 
 (defun leo--extract-abbrev-from-side (side)
   "Extract a term's abbreviated form from a given SIDE."
