@@ -596,7 +596,9 @@ The search term WORD is propertized in results."
     (leo--propertize-search-term-in-results word))
   (local-set-key (kbd "<tab>") 'shr-next-link)
   (local-set-key (kbd "<backtab>") 'shr-previous-link)
-  (local-set-key (kbd "t") 'leo-translate-word))
+  (local-set-key (kbd "t") 'leo-translate-word)
+  (when (require 'dictcc nil :noerror)
+    (local-set-key (kbd "c") 'dictcc)))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
