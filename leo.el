@@ -242,21 +242,21 @@ Tags include register (eg 'coll' or 'fig') and helper markers like 'also.', 'or:
 A side is either the source or target result for a given search."
   (let* ((repr (leo--get-child side 'repr))
          (lang (leo--get-lang-from-side side)))
-    (cond ((equal lang "en")
+    (cond ((equal lang "de")
+           (let* ((virr (leo--get-child repr 'virr))
+                  (small (leo--get-child virr 'small))
+                  (i (leo--get-child small 'i))
+                  (m (leo--get-child i 'm))
+                  (tag (leo--get-child m 't)))
+             (caddr tag)))
+          (t ; en and fr work like this at least
            (let* ((domain (leo--get-child repr 'domain))
                   (small (leo--get-child domain 'small))
                   (m (leo--get-child small 'm))
                   (tag (leo--get-child m 't))
                   (tag-string (caddr tag)))
              (if tag
-                 (leo--strip-trailing-period tag-string))))
-          ((equal lang "de")
-           (let* ((virr (leo--get-child repr 'virr))
-                  (small (leo--get-child virr 'small))
-                  (i (leo--get-child small 'i))
-                  (m (leo--get-child i 'm))
-                  (tag (leo--get-child m 't)))
-             (caddr tag))))))
+                 (leo--strip-trailing-period tag-string)))))))
 
 (defun leo--extract-plural-from-side (side)
   "Extract a term's plural form from a given SIDE.
@@ -264,12 +264,12 @@ A side is either the source or target result for a given search.
 Returns a string ."
   (let* ((repr (leo--get-child side 'repr))
          (lang (leo--get-lang-from-side side)))
-    (cond ((equal lang "en")
-           (let ((small (leo--get-child repr 'small)))
-             (cadddr small)))
-          ((equal lang "de")
+    (cond ((equal lang "de")
            (let* ((flecttabref (leo--get-child repr 'flecttabref))
                   (small (leo--get-child flecttabref 'small)))
+             (cadddr small)))
+          (t ; equal lang "en")
+           (let ((small (leo--get-child repr 'small)))
              (cadddr small))))))
 
 ;; EN nouns have these, at the least
