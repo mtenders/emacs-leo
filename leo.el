@@ -115,6 +115,9 @@ The returned list contains strings of alternating languages"
 (defun leo--get-result-lang-pair (xml-node)
   (xml-get-attribute xml-node 'lp))
 
+(defun leo--get-result-similar-list (xml-node)
+  (xml-get-children xml-node 'similar))
+
 (defun leo--get-result-section-list (xml-node)
   (xml-get-children xml-node 'sectionlist))
 
@@ -449,14 +452,14 @@ Returns a nested list of forum posts titles, urls, and teasers."
               (leo--print-single-entry x))
             section-entries)))
 
-(defun leo--print-translation (results)
-  "Format and print translation PAIRS.
-Results include domain tags and plural forms."
-  (if (null results) nil
+(defun leo--print-translation (results word similar)
+  "Format and print translation RESULTS."
     (with-current-buffer (get-buffer " *leo*")
-      (mapcar (lambda (x)
-                (leo--print-single-section x))
-              results))))
+      (if (null results) ;nil
+          (leo--did-you-mean word similar)
+        (mapcar (lambda (x)
+                  (leo--print-single-section x))
+                results))))
 
 (defun leo--print-forums (forum-posts)
   "Format and print translation FORUM-POSTS."
@@ -485,6 +488,39 @@ Results include domain tags and plural forms."
           "\n\n"
           (leo--print-forums (cdr forum-posts))))))))
 
+(defun leo--translate-word-sim-click (event)
+  "Translate word on mouse click EVENT from language set by 'leo-language' to German."
+  (interactive "e")
+  (leo--translate leo-language (word-at-point)))
+
+(defun leo--did-you-mean (word similar)
+  "Print some alternative terms to search for.
+Used if `leo--print-translation' has no results. Results are links to searches for themselves."
+  (let* ((sim-sides (xml-get-children similar 'side))
+         (sim-word-nodes (leo--map-get-children sim-sides 'word))
+         (sim-word-strings
+          (mapcar (lambda (x)
+                    (car (xml-node-children x)))
+                  sim-word-nodes))
+         (sim-words-propertized
+          (mapcar (lambda (x)
+                    (let ((sim-map (make-sparse-keymap)))
+                      (define-key sim-map [mouse-2] 'leo--translate-word-sim-click)
+                      (propertize x
+                                  'button t
+                                  'follow-link t
+                                  'keymap sim-map
+                                  'fontified t
+                                  'face 'leo--link-face
+                                  'mouse-face 'highlight
+                                  'help-echo (concat "Search leo for '"
+                                                     x "'"))))
+                  sim-word-strings)))
+    (insert
+     (concat
+      "No results for " word ". Did you mean:\n\n "
+      (mapconcat #'identity sim-words-propertized "  ")))))
+
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
   (save-excursion
@@ -496,12 +532,12 @@ Results include domain tags and plural forms."
         (add-text-properties (- (point) (length word)) (point)
                              '(face leo--match-face))))))
 
-(defun leo--open-translation-buffer (results forums word)
-  "Print translation PAIRS and FORUMS in temporary buffer.
+(defun leo--open-translation-buffer (results forums word similar)
+  "Print translation RESULTS and FORUMS in temporary buffer.
 The search term WORD is propertized in results."
   (with-output-to-temp-buffer " *leo*"
     (princ (concat "leo.de search results for " word ":\n\n"))
-    (leo--print-translation results)
+    (leo--print-translation results word similar)
     (princ (concat "\n\nleo.de forum results for " word ":\n\n"))
     (leo--print-forums forums))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
@@ -509,23 +545,25 @@ The search term WORD is propertized in results."
   (let ((inhibit-read-only t))
     (leo--propertize-search-term-in-results word))
   (local-set-key (kbd "<tab>") 'shr-next-link)
-  (local-set-key (kbd "<backtab>") 'shr-previous-link))
+  (local-set-key (kbd "<backtab>") 'shr-previous-link)
+  (local-set-key (kbd "t") 'leo-translate-word))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
   (let* ((xml (leo--parse-xml
               (leo--generate-url lang word)))
-         (section-list (car (leo--get-result-section-list (car xml)))))
+         (section-list (car (leo--get-result-section-list (car xml))))
+         (similar-list (car (leo--get-result-similar-list (car xml)))))
     (leo--open-translation-buffer
      (leo--build-sections-list section-list)
-     ;; (leo--extract-translation-pairs xml)
      (leo--extract-forum-subject-link-pairs xml)
-     word)))
+     word
+     similar-list)))
 
 ;;;###autoload
 (defun leo-translate-word (word)
   "Translate WORD from language set by 'leo-language' to German.
-Show translations in new buffer windown."
+Show translations in new buffer window."
   (interactive "sTranslate: ")
   (leo--translate leo-language word))
 
