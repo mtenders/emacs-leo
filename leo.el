@@ -217,7 +217,7 @@ Orders POS to come first, so that info tags can run on with what follows"
                                 (cons x culled)))
                             intersect)))))))
 
-;; for NOUNS
+;; for NOUNS only??
 (defun leo--extract-tags-from-side (side)
   "Extract a term's info tags from a given SIDE.
 Tags include register (eg 'coll' or 'fig') and helper markers like 'also.', 'or:', for prefixing other elements."
@@ -562,8 +562,12 @@ Used if `leo--print-translation' has no results. Results are links to searches f
                   sim-word-strings)))
     (insert
      (concat
-      "No results for " word ". Did you mean:\n\n "
-      (mapconcat #'identity sim-words-propertized "  ")))))
+      "No entries for " word ". "
+      (if sim-words-propertized
+          (concat
+          "Did you mean:\n\n "
+          (mapconcat #'identity sim-words-propertized "  ")))
+      "\n\nHit 't' to search again."))))
 
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
