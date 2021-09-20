@@ -361,7 +361,7 @@ Each contains two sides, or results in a pair of languages."
                      (list (leo--extract-words-from-side x)
                            (cons 'pl (leo--extract-plural-from-side x))
                            (cons 'domain (leo--extract-domain-from-side x))
-                           (cons 'tags (leo--extract-register-maybe-from-side x))
+                           (cons 'tags (leo--extract-tags-from-side x))
                            (cons 'abbrev (leo--extract-abbrev-from-side x))
                            (cons 'context (leo--extract-context-marker-from-side x))
                            (cons 'table (leo--extract-flextable-from-side x))))
