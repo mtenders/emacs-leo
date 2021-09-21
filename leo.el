@@ -267,6 +267,12 @@ Tags include register (eg 'coll' or 'fig') and helper markers like 'also.', 'or:
       (substring string 0 -1)
     string))
 
+(defun leo--strip-redundant-parens (string)
+  "Remove redundant ( ) from from STRING if it has them."
+  (if (string-match "^(" string)
+      (substring string 1 -1)
+    string))
+
 (defun leo--extract-domains-from-side (side)
   "Extract a term's domains from a given SIDE.
 A side is either the source or target result for a given search."
@@ -321,8 +327,9 @@ A context marker disambiguates what particular meaning of a term is being used f
                                (if (stringp (caddr x))
                                    ;;in case we get a bunch more XML instead
                                    (if (> (length (caddr x)) 1)
-                                       ;; in case we get a ] as part of a tag
-                                       (caddr x))))
+                                       ;; in case we get a lone ] as part of a tag
+                                       (leo--strip-redundant-parens
+                                        (caddr x)))))
                              is)))))))
 
 
