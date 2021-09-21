@@ -72,6 +72,20 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
     '((t :inherit success :weight bold))
     "Face used for search terms in search results.")
 
+(defvar leo-result-search-map
+  (let ((map (make-sparse-keymap)))
+  ;; (let ((map (copy-keymap shr-map)))
+    (define-key map [mouse-2] 'leo--translate-word-click-search)
+    (define-key map (kbd "RET") 'leo--translate-word-return-search)
+    map))
+
+(defvar leo-inflexion-table-map
+  (let ((map (make-sparse-keymap)))
+  ;; (let ((map (copy-keymap shr-map)))
+    (define-key map [mouse-2] 'shr-browse-url)
+    (define-key map (kbd "RET") 'shr-browse-url)
+    map))
+
 (defvar leo-languages-full
   '(("en" . "englisch")
     ("es" . "spanisch")
@@ -423,12 +437,6 @@ Each contains two sides, or results in a pair of languages."
 
 ;;; PRINTING
 
-(defvar leo-click-map
-  ;; (let ((map (make-sparse-keymap)))
-  (let ((map (copy-keymap shr-map)))
-    (define-key map [mouse-2] 'leo--translate-word-click-search)
-    map))
-
 (defun leo--print-single-side (side)
   (let* ((term (cdr (assoc 'term (car side))))
          (suffixes (cdr (assoc 'suffixes (car side))))
@@ -453,7 +461,7 @@ Each contains two sides, or results in a pair of languages."
             'button t
             'follow-link t
             'shr-url table
-            'keymap shr-map
+            'keymap leo-inflexion-table-map ;shr-map
             'fontified t
             'face 'leo--auxiliary-face
             'mouse-face 'highlight
@@ -463,7 +471,7 @@ Each contains two sides, or results in a pair of languages."
       (propertize term
                   'button t
                   'follow-link t
-                  'keymap leo-click-map
+                  'keymap leo-result-search-map
                   'fontified t
                   'face 'leo--link-face
                   'mouse-face 'highlight
@@ -488,10 +496,10 @@ Each contains two sides, or results in a pair of languages."
       (if (and plural (stringp plural))
           (concat " "
                   (propertize plural
-                              'button t
+                              ;; 'button t ; no redundant tab stops
                               'follow-link t
                               'shr-url table
-                              'keymap shr-map
+                              'keymap leo-inflexion-table-map ;shr-map
                               'fontified t
                               'face 'leo--auxiliary-face
                               'mouse-face 'highlight
@@ -565,11 +573,6 @@ Each contains two sides, or results in a pair of languages."
           "\n\n"
           (leo--print-forums (cdr forum-posts))))))))
 
-(defun leo--translate-word-click-search (event)
-  "Translate word on mouse click EVENT from language set by 'leo-language' to German."
-  (interactive "e")
-  (leo--translate leo-language (word-at-point)))
-
 (defun leo-browse-url-results ()
   "Open the current results for LANG and WORD in external browser."
   (interactive)
@@ -577,6 +580,19 @@ Each contains two sides, or results in a pair of languages."
         (word (plist-get leo--results-info 'term)))
     (browse-url-xdg-open
      (concat "https://dict.leo.org/" lang-full "-deutsch/" word))))
+
+(defun leo--translate-word-click-search (event)
+  "Translate word on mouse click EVENT from language set by 'leo-language' to German."
+  (interactive "e")
+  (leo--translate leo-language (word-at-point)))
+
+(defun leo--translate-word-return-search ()
+  "Translate word on hitting return from language set by 'leo-language' to German."
+  (interactive)
+  (let ((text (buffer-substring-no-properties (point) ; we already tabbed to here
+                                              (next-single-property-change
+                                               (point) 'button))))
+    (leo--translate leo-language text)))
 
 (defun leo--did-you-mean (word similar)
   "Print some alternative terms to search for.
@@ -589,17 +605,17 @@ Used if `leo--print-translation' has no results. Results are links to searches f
                   sim-word-nodes))
          (sim-words-propertized
           (mapcar (lambda (x)
-                    (let ((sim-map (make-sparse-keymap)))
-                      (define-key sim-map [mouse-2] 'leo--translate-word-click-search)
+                    ;; (let ((sim-map (make-sparse-keymap)))
+                      ;; (define-key sim-map [mouse-2] 'leo--translate-word-click-search)
                       (propertize x
                                   'button t
                                   'follow-link t
-                                  'keymap sim-map
+                                  'keymap leo-result-search-map
                                   'fontified t
                                   'face 'leo--link-face
                                   'mouse-face 'highlight
                                   'help-echo (concat "Search leo for '"
-                                                     x "'"))))
+                                                     x "'")))
                   sim-word-strings)))
     (insert
      (concat
@@ -609,6 +625,16 @@ Used if `leo--print-translation' has no results. Results are links to searches f
           "Did you mean:\n\n "
           (mapconcat #'identity sim-words-propertized "  ")))
       "\n\nHit 't' to search again.\n\n"))))
+
+(defun leo--make-buttons ()
+  (with-current-buffer (get-buffer " *leo*")
+    (let ((inhibit-read-only t))
+      (save-excursion
+        (goto-char (point-min))
+        (while (next-single-property-change (point) 'button)
+          (make-text-button
+           (goto-char (next-single-property-change (point) 'button))
+           (goto-char (next-single-property-change (point) 'button))))))))
 
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
@@ -646,12 +672,10 @@ The search term WORD is propertized in results."
     (leo--print-forums forums))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1))
-  ;; (let ((inhibit-read-only t))
+  (leo--make-buttons)
   (leo--propertize-search-term-in-results word)
   ;; hack to not ruin help-mode bindings, till we have a minor mode:
   (use-local-map (copy-keymap (current-local-map)))
-  (local-set-key (kbd "<tab>") 'shr-next-link)
-  (local-set-key (kbd "<backtab>") 'shr-previous-link)
   (local-set-key (kbd "t") 'leo-translate-word)
   (local-set-key (kbd "b") 'leo-browse-url-results)
   (when (require 'dictcc nil :noerror)
