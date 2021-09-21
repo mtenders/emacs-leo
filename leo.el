@@ -494,7 +494,7 @@ Each contains two sides, or results in a pair of languages."
           (propertize (concat " ("
                               (mapconcat #'identity tags ", ")
                               ")")
-                      'face 'leo--auxiliary-face))
+                      'face '(slanted italic inherit font-lock-comment-face))) ;'leo--auxiliary-face))
       (if suffixes
           (propertize (concat " "
                               (mapconcat #'identity suffixes ", "))
