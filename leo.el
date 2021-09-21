@@ -262,6 +262,26 @@ Tags include register (eg 'coll' or 'fig') and helper markers like 'also.', 'or:
                (caddr x)))
             ts)))
 
+;; for NOUNS only | works for DE at least
+(defun leo--extract-scientific-name-from-side (side)
+  "Extract a term's info tags from a given SIDE.
+Tags include register (eg 'coll' or 'fig') and helper markers like 'also.', 'or:', for prefixing other elements."
+  (let* ((repr (xml-get-children side 'repr))
+         (smalls (leo--map-get-children repr 'small))
+         (is (leo--map-get-children smalls 'i))
+         (ms (leo--map-get-children is 'm))
+         (ts (leo--map-get-children ms 't)))
+    (if (member "wiss.:"
+                (leo--extract-tags-from-side side))
+        ;; TODO: test for wiss. in ts children
+        (remove nil
+                (mapcar (lambda (x)
+                          (let ((sci-mayb (car (last (xml-node-children x)))))
+                            (when (stringp sci-mayb)
+                              (if (string-match "^[ ]+" sci-mayb)
+                                  (substring sci-mayb 1 nil)))))
+                        is)))))
+
 (defun leo--strip-trailing-period (string)
   "Remove trailing period from STRING if it has one."
   (if (string-match "\\.$" string)
@@ -403,6 +423,7 @@ Each contains two sides, or results in a pair of languages."
                            (cons 'pl (leo--extract-plural-from-side x))
                            (cons 'domains (leo--extract-domains-from-side x))
                            (cons 'tags (leo--extract-tags-from-side x))
+                           (cons 'sci (leo--extract-scientific-name-from-side x))
                            (cons 'abbrev (leo--extract-abbrev-from-side x))
                            (cons 'context (leo--extract-context-marker-from-side x))
                            (cons 'table (leo--extract-flextable-from-side x))))
@@ -456,6 +477,7 @@ Each contains two sides, or results in a pair of languages."
          (tags (cdr (assoc 'tags (cdr side))))
          (domains (cdr (assoc 'domains (cdr side))))
          (case-marks (cdr (assoc 'cases (cdr side))))
+         (sci (cdr (assoc 'sci (cdr side))))
          (abbrev (cdr (assoc 'abbrev (cdr side))))
          (context (cdr (assoc 'context (cdr side))))
          (table (cdr (assoc 'table (cdr side)))))
@@ -499,6 +521,10 @@ Each contains two sides, or results in a pair of languages."
           (propertize (concat " "
                               (mapconcat #'identity suffixes ", "))
                       'face 'leo--auxiliary-face))
+      (if sci
+          (propertize (concat " "
+                              (mapconcat #'identity sci ", "))
+                      'face '(slanted italic inherit font-lock-comment-face)))
       (if abbrev
           (propertize (concat " " abbrev)
                       'face 'leo--auxiliary-face))
