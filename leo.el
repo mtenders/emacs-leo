@@ -72,6 +72,22 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
     '((t :inherit success :weight bold))
     "Face used for search terms in search results.")
 
+(defvar leo-languages-full
+  '(("en" . "englisch")
+    ("es" . "spanisch")
+    ("fr" . "französisch")
+    ("it" . "italienisch")
+    ("ch" . "chinesisch")
+    ("pt" . "portugiesisch")
+    ("ru" . "russisch")
+    ("pl" . "polnisch"))
+    "An alist linking language abbreviations to the full name.
+Used to build the URL for external browsing to leo.de.")
+
+(defvar leo--results-info nil
+  "Information about the current results from a leo search. Used to store search term for `leo-browse-url-results'.")
+(make-variable-buffer-local 'leo--results-info)
+
 (defun leo--generate-url (lang word)
   "Generate link to query for translations of WORD from LANG to German."
   (concat
@@ -554,6 +570,14 @@ Each contains two sides, or results in a pair of languages."
   (interactive "e")
   (leo--translate leo-language (word-at-point)))
 
+(defun leo-browse-url-results ()
+  "Open the current results for LANG and WORD in external browser."
+  (interactive)
+  (let ((lang-full (cdr (assoc leo-language leo-languages-full)))
+        (word (plist-get leo--results-info 'term)))
+    (browse-url-xdg-open
+     (concat "https://dict.leo.org/" lang-full "-deutsch/" word))))
+
 (defun leo--did-you-mean (word similar)
   "Print some alternative terms to search for.
 Used if `leo--print-translation' has no results. Results are links to searches for themselves."
@@ -614,8 +638,10 @@ The search term WORD is propertized in results."
   (local-set-key (kbd "<tab>") 'shr-next-link)
   (local-set-key (kbd "<backtab>") 'shr-previous-link)
   (local-set-key (kbd "t") 'leo-translate-word)
+  (local-set-key (kbd "b") 'leo-browse-url-results)
   (when (require 'dictcc nil :noerror)
-    (local-set-key (kbd "c") 'dictcc)))
+    (local-set-key (kbd "c") 'dictcc))
+  (setq leo--results-info `(term ,word)))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
