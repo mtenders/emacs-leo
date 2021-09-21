@@ -608,31 +608,46 @@ Used if `leo--print-translation' has no results. Results are links to searches f
           (concat
           "Did you mean:\n\n "
           (mapconcat #'identity sim-words-propertized "  ")))
-      "\n\nHit 't' to search again."))))
+      "\n\nHit 't' to search again.\n\n"))))
 
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
-  (save-excursion
-    (goto-char (point-min))
-    (while (search-forward-regexp word nil 'noerror)
-      (let ((props (text-properties-at (- (point) 1))))
-        (remove-text-properties (- (point) (length word)) (point)
-                                '(face face))
-        (add-text-properties (- (point) (length word)) (point)
-                             '(face leo--match-face))))))
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (while (search-forward-regexp word nil 'noerror)
+        (let ((props (text-properties-at (- (point) 1))))
+          (remove-text-properties (- (point) (length word)) (point)
+                                  '(face face))
+          (add-text-properties (- (point) (length word)) (point)
+                               '(face leo--match-face)))))))
+
+(defun leo--print-results-buffer-heading (word)
+  (with-current-buffer (get-buffer " *leo*")
+    (insert
+     (propertize
+      (concat "leo.de search results for " word ":\n\n")
+      'face 'leo--search-and-forum-face))))
+
+(defun leo--print-results-buffer-forum-heading (word)
+    (with-current-buffer (get-buffer " *leo*")
+      (insert
+       (propertize
+        (concat "leo.de forum results for " word ":\n\n")
+        'face 'leo--search-and-forum-face))))
 
 (defun leo--open-translation-buffer (results forums word similar)
   "Print translation RESULTS and FORUMS in temporary buffer.
 The search term WORD is propertized in results."
-  (with-output-to-temp-buffer " *leo*"
-    (princ (concat "leo.de search results for " word ":\n\n"))
+  (with-output-to-temp-buffer " *leo*" ; temp-buffer-show-hook makes it help-mode
+    (leo--print-results-buffer-heading word)
     (leo--print-translation results word similar)
-    (princ (concat "\n\nleo.de forum results for " word ":\n\n"))
+    (leo--print-results-buffer-forum-heading word)
     (leo--print-forums forums))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1))
-  (let ((inhibit-read-only t))
-    (leo--propertize-search-term-in-results word))
+  ;; (let ((inhibit-read-only t))
+  (leo--propertize-search-term-in-results word)
   ;; hack to not ruin help-mode bindings, till we have a minor mode:
   (use-local-map (copy-keymap (current-local-map)))
   (local-set-key (kbd "<tab>") 'shr-next-link)
