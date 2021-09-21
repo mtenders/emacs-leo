@@ -245,7 +245,8 @@ Orders POS to come first, so that info tags can run on with what follows"
                     (mapcar (lambda (x)
                               (let ((culled (delete x cases-and-pos)))
                                 (cons x culled)))
-                            intersect)))))))
+                            intersect))))
+      cases-and-pos)))
 
 ;; for NOUNS only??
 (defun leo--extract-tags-from-side (side)
