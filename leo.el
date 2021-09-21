@@ -428,6 +428,22 @@ Each contains two sides, or results in a pair of languages."
          (table (cdr (assoc 'table (cdr side)))))
     (insert
      (concat
+      (if table
+          (concat
+           (propertize
+            (if (fontp (char-displayable-p #10r9638))
+                "▦"
+              "#")
+            'button t
+            'follow-link t
+            'shr-url table
+            'keymap shr-map
+            'fontified t
+            'face 'leo--auxiliary-face
+            'mouse-face 'highlight
+            'help-echo (concat "Browse inflexion table for '"
+                               term "'"))
+           " "))
       (propertize term
                   'button t
                   'follow-link t
@@ -453,24 +469,23 @@ Each contains two sides, or results in a pair of languages."
       (if abbrev
           (propertize (concat " " abbrev)
                       'face 'leo--auxiliary-face))
-      (if (and plural
-               (stringp plural))
+      (if (and plural (stringp plural))
           (concat " "
-          (propertize plural
-                      'button t
-                      'follow-link t
-                      'shr-url table
-                      'keymap shr-map
-                      'fontified t
-                      'face 'leo--auxiliary-face
-                      'mouse-face 'highlight
-                      'help-echo (concat "Browse inflexion table for '"
-                                         term "'"))))
+                  (propertize plural
+                              'button t
+                              'follow-link t
+                              'shr-url table
+                              'keymap shr-map
+                              'fontified t
+                              'face 'leo--auxiliary-face
+                              'mouse-face 'highlight
+                              'help-echo (concat "Browse inflexion table for '"
+                                                 term "'"))))
       (if domains
-               (propertize (concat " ["
-                                   (mapconcat #'identity domains ",")
-                                   "]")
-                           'face 'leo--auxiliary-face))
+          (propertize (concat " ["
+                              (mapconcat #'identity domains ",")
+                              "]")
+                      'face 'leo--auxiliary-face))
       (if context
           (propertize (concat " {"
                               (mapconcat #'identity context ", ")
