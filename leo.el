@@ -8,7 +8,7 @@
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: convenience, translate
 ;; URL: https://github.com/mtenders/emacs-leo
-;; Version: 0.1
+;; Version: 0.2
 ;; Prefix: leo
 ;; Separator: -
 
@@ -43,6 +43,7 @@
 
 ;;; Code:
 (require 'xml)
+(require 'button)
 
 (defcustom leo-language "en"
   "Language to translate from to German.
@@ -68,6 +69,8 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
       (with-temp-buffer
 	(url-insert-file-contents url)
 	(xml-parse-region (point-min) (point-max))))
+
+;; Translations
 
 (defun leo--extract-translations (lst &optional acc)
   "Extract translations from LST and add it to ACC.
@@ -108,18 +111,44 @@ The returned list conains strings of alternating languages"
       "\n"))
     (leo--print-translation (cdr pairs))))
 
-(defun leo--open-translation-buffer (pairs)
-  "Print translation PAIRS to temporary buffer."
+;; Forum
+
+(defun leo--insert-forum-button (label path)
+  "Add PATH to leo base url and insert a button with LABEL."
+  (insert-button label
+               'action (lambda (x) (browse-url (button-get x 'url)))
+               'url (concat "http://dict.leo.org" path))
+  (princ "\n"))
+
+(defun leo--generate-forum-link (entry)
+  "Generate a hyperlink from one forum ENTRY."
+  (let ((path (cdaadr entry))
+        (label (caddr entry)))
+    (leo--insert-forum-button label path)))
+
+
+(defun leo--extract-forum-entries (parsed-xml)
+  "Extract forum entries from PARSED-XML."
+  (let* ((forum (leo--map-get-children parsed-xml 'forum))
+         (links (leo--map-get-children forum 'link)))
+    (mapcar 'leo--generate-forum-link links)))
+
+;; Ouput
+
+(defun leo--open-translation-buffer (parsed-xml)
+  "Print translations and forum entries from PARSED-XML to temporary buffer."
   (with-output-to-temp-buffer " *leo*"
-    (leo--print-translation pairs))
+    (princ " ----------\nTRANSLATION\n ----------\n\n")
+    (leo--print-translation (leo--extract-translation-pairs parsed-xml))
+    (princ "\n ---\nFORUM\n ---\n")
+    (with-current-buffer (get-buffer " *leo*")
+      (leo--extract-forum-entries parsed-xml)))
   (other-window 1))
 
 (defun leo--translate (lang word)
   "Translate WORD between LANG and German."
-  (leo--open-translation-buffer
-   (leo--extract-translation-pairs
-     (leo--parse-xml
-      (leo--generate-url lang word)))))
+  (let ((parsed-xml (leo--parse-xml (leo--generate-url lang word))))
+    (leo--open-translation-buffer parsed-xml)))
 
 ;;;###autoload
 (defun leo-translate-word (word)
@@ -138,3 +167,5 @@ Show translations in new buffer windown."
 
 (provide 'leo)
 ;;; leo.el ends here
+
+(leo-translate-word "test")
