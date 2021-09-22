@@ -616,6 +616,10 @@ Each contains two sides, or results in a pair of languages."
     (browse-url-xdg-open
      (concat "https://dict.leo.org/" lang-full "-deutsch/" word))))
 
+(defun leo--search-term-with-dictcc ()
+  (interactive)
+  (dictcc (plist-get leo--results-info 'term)))
+
 (defun leo--translate-word-click-search (event)
   "Translate word on mouse click EVENT from language set by 'leo-language' to German."
   (interactive "e")
@@ -714,7 +718,7 @@ The search term WORD is propertized in results."
   (local-set-key (kbd "t") 'leo-translate-word)
   (local-set-key (kbd "b") 'leo-browse-url-results)
   (when (require 'dictcc nil :noerror)
-    (local-set-key (kbd "c") 'dictcc))
+    (local-set-key (kbd "c") 'leo--search-term-with-dictcc))
   (setq leo--results-info `(term ,word)))
 
 (defun leo--translate (lang word)
@@ -735,7 +739,9 @@ The search term WORD is propertized in results."
 Show translations in new buffer window."
   (interactive "sTranslate: ")
   (leo--translate leo-language word)
-  (message "Hit 't' to search again."))
+  (message (concat "'t' to search again, 'b' to view in browser"
+                   (when (require 'dictcc nil :noerror)
+                     ", 'c' to search with dictcc.el"))))
 
 ;;;###autoload
 (defun leo-translate-at-point ()
