@@ -123,14 +123,14 @@ The returned list conains strings of alternating languages"
 
 ;;;###autoload
 (defun leo-translate-word (word)
-  "Translate WORD from language set by 'leo-language' to German.
+  "Translate WORD between 'leo-language' and German.
 Show translations in new buffer windown."
   (interactive "sTranslate: ")
   (leo--translate leo-language word))
 
 ;;;###autoload
 (defun leo-translate-at-point ()
-  "Translate word under cursor from language set by 'leo-language' to German.
+  "Translate word under cursor between 'leo-language' and German.
 Show translations in new buffer windown."
   (interactive)
   (leo--translate leo-language (current-word)))
