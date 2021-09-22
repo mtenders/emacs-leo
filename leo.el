@@ -115,7 +115,7 @@ The returned list conains strings of alternating languages"
   (other-window 1))
 
 (defun leo--translate (lang word)
-  "Translate WORD from LANG to German."
+  "Translate WORD between LANG and German."
   (leo--open-translation-buffer
    (leo--extract-translation-pairs
      (leo--parse-xml
