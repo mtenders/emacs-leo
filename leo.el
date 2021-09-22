@@ -167,5 +167,3 @@ Show translations in new buffer windown."
 
 (provide 'leo)
 ;;; leo.el ends here
-
-(leo-translate-word "test")
