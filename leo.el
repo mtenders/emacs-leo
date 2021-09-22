@@ -516,7 +516,7 @@ Each contains two sides, or results in a pair of languages."
           (propertize (concat " ("
                               (mapconcat #'identity tags ", ")
                               ")")
-                      'face '(slanted italic inherit font-lock-comment-face))) ;'leo--auxiliary-face))
+                      'face '(italic leo--auxiliary-face)))
       (if suffixes
           (propertize (concat " "
                               (mapconcat #'identity suffixes ", "))
@@ -524,7 +524,7 @@ Each contains two sides, or results in a pair of languages."
       (if sci
           (propertize (concat " "
                               (mapconcat #'identity sci ", "))
-                      'face '(slanted italic inherit font-lock-comment-face)))
+                      'face '(italic leo--auxiliary-face)))
       (if abbrev
           (propertize (concat " " abbrev)
                       'face 'leo--auxiliary-face))
@@ -534,7 +534,7 @@ Each contains two sides, or results in a pair of languages."
                               ;; 'button t ; no redundant tab stops
                               'follow-link t
                               'shr-url table
-                              'keymap leo-inflexion-table-map ;shr-map
+                              'keymap leo-inflexion-table-map
                               'fontified t
                               'face 'leo--auxiliary-face
                               'mouse-face 'highlight
