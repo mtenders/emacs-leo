@@ -612,9 +612,12 @@ Each contains two sides, or results in a pair of languages."
   "Open the current results for LANG and WORD in external browser."
   (interactive)
   (let ((lang-full (cdr (assoc leo-language leo-languages-full)))
-        (word (plist-get leo--results-info 'term)))
-    (browse-url-xdg-open
-     (concat "https://dict.leo.org/" lang-full "-deutsch/" word))))
+        (word (plist-get leo--results-info 'term))
+        (search-url (concat "https://dict.leo.org/" lang-full "-deutsch/" word)))
+    ;; TODO maybe prefix arg = 2ndary browser would be better
+    (if (browse-url-can-use-xdg-open)
+        (browse-url-xdg-open search-url)
+      (browse-url search-url))))
 
 (defun leo--search-term-with-dictcc ()
   (interactive)
