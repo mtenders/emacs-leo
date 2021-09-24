@@ -706,29 +706,34 @@ Used if `leo--print-translation' has no results. Results are links to searches f
 
 (defun leo--open-translation-buffer (results forums word similar)
   "Print translation RESULTS and FORUMS in temporary buffer.
-The search term WORD is propertized in results."
+The search term WORD is propertized in results.
+SIMILAR is a list of suggestions to display if there are no results."
   (with-output-to-temp-buffer " *leo*" ; temp-buffer-show-hook makes it help-mode
     (leo--print-results-buffer-heading word)
     (leo--print-translation results word similar)
     (leo--print-results-buffer-forum-heading word)
     (leo--print-forums forums))
+  ;; make rly sure we are in correct buffer
+  ;; before we set do any keymapping
+  (with-current-buffer (get-buffer " *leo*")
+    (leo--make-buttons)
+    (leo--propertize-search-term-in-results word)
+    ;; hack to not ruin help-mode bindings, till we have a minor mode:
+    (use-local-map (copy-keymap (current-local-map)))
+    (local-set-key (kbd "t") 'leo-translate-word)
+    (local-set-key (kbd "b") 'leo-browse-url-results)
+    (when (require 'dictcc nil :noerror)
+      (local-set-key (kbd "c") 'leo--search-term-with-dictcc))
+    (setq leo--results-info `(term ,word)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
-      (other-window 1))
-  (leo--make-buttons)
-  (leo--propertize-search-term-in-results word)
-  ;; hack to not ruin help-mode bindings, till we have a minor mode:
-  (use-local-map (copy-keymap (current-local-map)))
-  (local-set-key (kbd "t") 'leo-translate-word)
-  (local-set-key (kbd "b") 'leo-browse-url-results)
-  (when (require 'dictcc nil :noerror)
-    (local-set-key (kbd "c") 'leo--search-term-with-dictcc))
-  (setq leo--results-info `(term ,word)))
+      (other-window 1)))
 
 (defun leo--translate (lang word)
   "Translate WORD from LANG to German."
   (let* ((xml (leo--parse-xml
               (leo--generate-url lang word)))
          (section-list (car (leo--get-result-section-list (car xml))))
+         ;; similar terms to offer if no results:
          (similar-list (car (leo--get-result-similar-list (car xml)))))
     (leo--open-translation-buffer
      (leo--build-sections-list section-list)
