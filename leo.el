@@ -43,6 +43,7 @@
 
 ;;; Code:
 (require 'xml)
+(eval-when-compile (require 'subr-x))
 
 (defcustom leo-language "en"
   "Language to translate from to German.
