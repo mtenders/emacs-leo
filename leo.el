@@ -626,7 +626,7 @@ Each contains two sides, or results in a pair of languages."
 (defun leo--translate-word-click-search (event)
   "Translate word on mouse click EVENT from language set by 'leo-language' to German."
   (interactive "e")
-  (leo--translate leo-language (word-at-point)))
+  (leo--translate leo-language (current-word)))
 
 (defun leo--translate-word-return-search ()
   "Translate word on hitting return from language set by 'leo-language' to German."
