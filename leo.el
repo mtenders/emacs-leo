@@ -52,25 +52,29 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
 
-(defface leo--link-face
+(defface leo-link-face
   '((t :inherit warning))
   "Face used for links to forum posts.")
 
-(defface leo--auxiliary-face
+(defface leo-auxiliary-face
     '((t :inherit font-lock-comment-face))
-    "Face used to fade auxiliary items.")
+    "Face used to fade auxiliary items."
+      :group 'leo)
 
-(defface leo--heading-face
+(defface leo-heading-face
     '((t :inherit font-lock-function-name-face :weight bold))
-    "Face used for POS headings.")
+    "Face used for POS headings."
+      :group 'leo)
 
-(defface leo--search-and-forum-face
+(defface leo-search-and-forum-face
     '((t :weight bold))
-    "Face used for Search and Forum headings.")
+    "Face used for Search and Forum headings."
+      :group 'leo)
 
-(defface leo--match-face
+(defface leo-match-face
     '((t :inherit success :weight bold))
-    "Face used for search terms in search results.")
+    "Face used for search terms in search results."
+      :group 'leo)
 
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
