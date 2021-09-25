@@ -281,8 +281,8 @@ Each contains two sides, or results in a pair of languages."
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
 
-(defun leo-add-props-to-match (match)
-  "Add text properties to string MATCH."
+(defun leo-add-props-to-match (match term)
+  "Add text properties to string MATCH, including TERM."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'button t
                              'follow-link t
@@ -294,18 +294,34 @@ Each contains two sides, or results in a pair of languages."
                                          "Click to search leo for this term"))
                        match))
 
+
+(defun leo-add-term-prop-to-match (match term)
+  "Add text property 'term TERM to string MATCH."
+  (add-text-properties (match-beginning 0) (match-end 0)
+                       (list 'term term)
+                       match))
+
 (defun leo--propertize-term-in-result (result term)
   "Add properties to words in RESULT that match words in TERM."
   (let ((term-spl (split-string term)))
     (save-match-data
       ;; try to match and propertize full term first:
-      ;; this avoids making every word in term a separate tab stop if poss
+      ;; this avoids making each word in term a separate tab stop
       (if (string-match term result)
-          (leo-add-props-to-match result)
+          (progn
+            ;; add properties to whole term string (for tab stops):
+            (leo-add-props-to-match result term)
+            ;; add term property separately to each word in term list
+            ;; for click to search each word separately, not whole term string:
+            (mapcar (lambda (x)
+                      (string-match x result)
+                      (leo-add-term-prop-to-match result x))
+                    term-spl))
         ;; else match each word in term separately:
         (mapcar (lambda (x)
                   (string-match x result)
-                  (leo-add-props-to-match result))
+                  (leo-add-props-to-match result x)
+                  (leo-add-term-prop-to-match result x))
                 term-spl))
       result)))
 
@@ -418,7 +434,7 @@ WORD is the search term, SIMILAR is a list of suggestions to display if results 
 (defun leo--translate-word-click-search (event)
   "Translate word on mouse click EVENT from language set by 'leo-language' to German."
   (interactive "e")
-  (leo--translate leo-language (current-word)))
+  (leo--translate leo-language (get-text-property (point) 'term )))
 
 (defun leo--translate-word-return-search ()
   "Translate word on hitting return from language set by 'leo-language' to German."
