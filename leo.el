@@ -277,7 +277,7 @@ Each contains two sides, or results in a pair of languages."
               (list
                (cons 'term (car (leo--extract-word-strings-as-list
                             (leo--get-words-node-from-side x))))
-               (cons 'suffixes (leo--get-repr-children-strings-as-list-trimmed x))
+               (cons 'result (leo--get-repr-children-strings-as-string-trimmed x))
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
 
