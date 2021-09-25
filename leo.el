@@ -55,38 +55,39 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
 
 (defface leo-link-face
   '((t :inherit warning))
-  "Face used for links to forum posts.")
+  "Face used for links to forum posts."
+  :group 'leo)
 
 (defface leo-auxiliary-face
-    '((t :inherit font-lock-comment-face))
-    "Face used to fade auxiliary items."
-      :group 'leo)
+  '((t :inherit font-lock-comment-face))
+  "Face used to fade auxiliary items."
+  :group 'leo)
 
 (defface leo-heading-face
-    '((t :inherit font-lock-function-name-face :weight bold))
-    "Face used for POS headings."
-      :group 'leo)
+  '((t :inherit font-lock-function-name-face :weight bold))
+  "Face used for POS headings."
+  :group 'leo)
 
 (defface leo-search-and-forum-face
-    '((t :weight bold))
-    "Face used for Search and Forum headings."
-      :group 'leo)
+  '((t :weight bold))
+  "Face used for Search and Forum headings."
+  :group 'leo)
 
 (defface leo-match-face
-    '((t :inherit success :weight bold))
-    "Face used for search terms in search results."
-      :group 'leo)
+  '((t :inherit success :weight bold))
+  "Face used for search terms in search results."
+  :group 'leo)
 
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
-  ;; (let ((map (copy-keymap shr-map)))
+    ;; (let ((map (copy-keymap shr-map)))
     (define-key map [mouse-2] 'leo--translate-word-click-search)
     (define-key map (kbd "RET") 'leo--translate-word-return-search)
     map))
 
 (defvar leo-inflexion-table-map
   (let ((map (make-sparse-keymap)))
-  ;; (let ((map (copy-keymap shr-map)))
+    ;; (let ((map (copy-keymap shr-map)))
     (define-key map [mouse-2] 'shr-browse-url)
     (define-key map (kbd "RET") 'shr-browse-url)
     map))
@@ -323,7 +324,7 @@ Each contains two sides, or results in a pair of languages."
             'shr-url table
             'keymap leo-inflexion-table-map ;shr-map
             'fontified t
-            'face 'leo--auxiliary-face
+            'face 'leo-auxiliary-face
             'mouse-face 'highlight
             'help-echo (concat "Browse inflexion table for '"
                                term "'"))
@@ -345,21 +346,23 @@ Each contains two sides, or results in a pair of languages."
       ))))
 
 (defun leo--print-single-entry (entry)
+  "Print an ENTRY, consisting of two sides of a result."
   (leo--print-single-side (car entry))
   (insert
    (concat
     "\n           "
     (propertize "--> "
-                'face 'leo--auxiliary-face)))
+                'face 'leo-auxiliary-face)))
   (leo--print-single-side (cadr entry))
   (insert "\n\n"))
 
 (defun leo--print-single-section (section)
+  "Print a single result SECTION, which is one side of an entry."
   (let ((section-pos (caar section))
         (section-entries (cdar section)))
     (insert
      (propertize section-pos
-                 'face 'leo--heading-face)
+                 'face 'leo-heading-face)
      "\n\n")
     (mapcar (lambda (x)
               (leo--print-single-entry x))
@@ -385,13 +388,13 @@ Each contains two sides, or results in a pair of languages."
                         'shr-url url
                         'keymap shr-map
                         'fontified t
-                        'face 'leo--link-face
+                        'face 'leo-link-face
                         'mouse-face 'highlight
                         'help-echo (concat "Browse forum entry for '"
                                            (caar forum-posts) "'")))
            (teaser
             (propertize (nth 2 (car forum-posts))
-                        'face 'leo--auxiliary-face)))
+                        'face 'leo-auxiliary-face)))
       (with-current-buffer (get-buffer " *leo*")
         (insert
          (concat
@@ -447,7 +450,7 @@ Used if `leo--print-translation' has no results. Results are links to searches f
                                   'follow-link t
                                   'keymap leo-result-search-map
                                   'fontified t
-                                  'face 'leo--link-face
+                                  'face 'leo-link-face
                                   'mouse-face 'highlight
                                   'help-echo (concat "Search leo for '"
                                                      x "'")))
@@ -481,21 +484,21 @@ Used if `leo--print-translation' has no results. Results are links to searches f
           (remove-text-properties (- (point) (length word)) (point)
                                   '(face face))
           (add-text-properties (- (point) (length word)) (point)
-                               '(face leo--match-face)))))))
+                               '(face leo-match-face)))))))
 
 (defun leo--print-results-buffer-heading (word)
   (with-current-buffer (get-buffer " *leo*")
     (insert
      (propertize
       (concat "leo.de search results for " word ":\n\n")
-      'face 'leo--search-and-forum-face))))
+      'face 'leo-search-and-forum-face))))
 
 (defun leo--print-results-buffer-forum-heading (word)
     (with-current-buffer (get-buffer " *leo*")
       (insert
        (propertize
         (concat "leo.de forum results for " word ":\n\n")
-        'face 'leo--search-and-forum-face))))
+        'face 'leo-search-and-forum-face))))
 
 (defun leo--open-translation-buffer (results forums word similar)
   "Print translation RESULTS and FORUMS in temporary buffer.
