@@ -248,27 +248,30 @@ Returns a nested list of forum posts titles, urls, and teasers."
 
 ;;; BUILDING RESULTS LISTS
 (defun leo--build-sections-list (section-list)
-  "Returns a list of sections, sorted by part of speech and containing entries."
+  "Return a list of sections from parsed XML SECTION-LIST.
+Sections are contain entries for a single part of speech."
   (let ((sections (xml-get-children section-list 'section)))
     (mapcar (lambda (x)
               (leo--build-section-from-entries x))
           sections)))
 
 (defun leo--build-section-from-entries (section)
+  "Build a SECTION, or group of entries all of the one part of speech."
   (let ((section-pos (leo--get-section-part-of-speech section)))
     (list (cons section-pos
                 (leo--build-list-of-entries (leo--get-entries-from-section section))))))
 
 (defun leo--build-list-of-entries (entries)
-  "Returns a list of ENTRIES.
+  "Return a list of ENTRIES.
 Each contains two sides, or results in a pair of languages."
   (mapcar (lambda (x)
             (leo--build-entry-from-sides x))
           entries))
 
 (defun leo--build-entry-from-sides (entry)
-  "Build an entry, ie a list of two sides."
-  (let ((pos (leo--get-entry-part-of-speech entry))
+  "Build an ENTRY, ie a list of two sides."
+  (let (
+        ;;(pos (leo--get-entry-part-of-speech entry))
         (sides (leo--get-sides-from-entry entry)))
     (mapcar (lambda (x)
               (list
@@ -360,7 +363,8 @@ Each contains two sides, or results in a pair of languages."
             section-entries)))
 
 (defun leo--print-translation (results word similar)
-  "Format and print translation RESULTS."
+  "Format and print translation RESULTS.
+WORD is the search term, SIMILAR is a list of suggestions to display if results are nil."
     (with-current-buffer (get-buffer " *leo*")
       (if (null results) ;nil
           (leo--did-you-mean word similar)
@@ -407,6 +411,7 @@ Each contains two sides, or results in a pair of languages."
       (browse-url search-url))))
 
 (defun leo--search-term-with-dictcc ()
+  "Repeat current search with dict.cc."
   (interactive)
   (dictcc (plist-get leo--results-info 'term)))
 
@@ -424,8 +429,8 @@ Each contains two sides, or results in a pair of languages."
     (leo--translate leo-language text)))
 
 (defun leo--did-you-mean (word similar)
-  "Print some alternative terms to search for.
-Used if `leo--print-translation' has no results. Results are links to searches for themselves."
+  "Print some alternative terms SIMILAR to search for.
+Used if `leo--print-translation' for WORD has no results. Results are links to searches for themselves."
   (let* ((sim-sides (xml-get-children similar 'side))
          (sim-word-nodes (leo--map-get-children sim-sides 'word))
          (sim-word-strings
@@ -465,6 +470,7 @@ Used if `leo--print-translation' has no results. Results are links to searches f
            (goto-char (next-single-property-change (point) 'button))
            (goto-char (next-single-property-change (point) 'button))))))))
 
+;; TODO: don't propertize search term in part participals
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
   (let ((inhibit-read-only t))
