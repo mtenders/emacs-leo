@@ -43,7 +43,6 @@
 
 ;;; Code:
 (require 'xml)
-(eval-when-compile (require 'subr-x))
 
 (defcustom leo-language "en"
   "Language to translate from to German.
@@ -125,28 +124,11 @@ Used to build the URL for external browsing to leo.de.")
 	(url-insert-file-contents url)
 	(xml-parse-region (point-min) (point-max))))
 
-(defun leo--extract-translations (lst &optional acc)
-  "Extract translations from LST and add it to ACC.
-The returned list contains strings of alternating languages"
-  (while (consp lst)
-    (setq acc (cons (mapconcat 'caddr (cddr (pop lst)) ", ") acc)))
-  (reverse acc))
-
-(defun leo--pair-translations (lst)
-  "Take the elements from LST and pair them."
-  (if (null lst)
-      nil
-    (cons (cons (car lst) (cadr lst)) (leo--pair-translations (cddr lst)))))
-
 (defun leo--map-get-children (seq child)
   "Map xml-get-children over SEQ for CHILD."
   (mapcan
    (lambda (node) (xml-get-children node child))
    seq))
-
-(defun leo--xml-node-itself (parsed-xml)
-  "Why I have to do this?"
-  (car parsed-xml))
 
 (defun leo--get-result-lang-pair (xml-node)
   (xml-get-attribute xml-node 'lp))
@@ -185,10 +167,6 @@ The returned list contains strings of alternating languages"
   "Get the language that SIDE is in."
   (xml-get-attribute side 'lang))
 
-(defun leo--get-child (tag child)
-    "Why do I fucking have to do this?"
-    (car (xml-get-children tag child)))
-
 (defun leo--get-words-node-from-side (side)
   (xml-get-children side 'words))
 
@@ -196,43 +174,37 @@ The returned list contains strings of alternating languages"
 ;;   (dom-child-by-tag side 'repr))
 
 ;;TODO: convert <br> children to "\n" in place before splitting
-(defun leo--get-repr-children-strings-as-list (side)
-  (split-string (dom-texts
-                 (dom-child-by-tag side 'repr)
-                 "")))
+;; (defun leo--get-repr-children-strings-as-list (side)
+;;   (split-string (dom-texts
+;;                  (dom-child-by-tag side 'repr)
+;;                  "")))
 
-(defun leo--strip-redundant-scores-and-spaces (string)
-  (let ((string (string-trim-right string "[  ]+")))
-    (string-trim-left string "[  ]+")))
+(defun leo--get-repr-children-strings-as-string (side)
+  (dom-texts (dom-child-by-tag side 'repr) ""))
 
-(defun leo--get-repr-children-strings-as-list-trimmed (side)
-      (mapcar (lambda (x)
-                (leo--strip-redundant-scores-and-spaces x))
-              (leo--get-repr-children-strings-as-list side)))
+(defun leo--strip-redundant-scores (string)
+  (replace-regexp-in-string "[ ]+" "" string))
 
-(defun leo--strip-redundant-parens (string)
-  "Remove redundant ( ) from from STRING if it has them."
-  (if (string-match "^_+" string)
-      (substring string 1 -1)
-    string))
+(defun leo--get-repr-children-strings-as-string-trimmed (side)
+  (leo--strip-redundant-scores
+   (leo--get-repr-children-strings-as-string side)))
 
+;; (defun leo--get-repr-children-strings-as-list-trimmed (side)
+;;       (mapcar (lambda (x)
+;;                 (leo--strip-redundant-scores x))
+;;               (leo--get-repr-children-strings-as-list side)))
+
+;; (defun leo--strip-redundant-parens (string)
+;;   "Remove redundant ( ) from from STRING if it has them."
+;;   (if (string-match "^_+" string)
+;;       (substring string 1 -1)
+;;     string))
 
 (defun leo--extract-word-strings-as-list (words-node)
-  ;; we collect a list to capture spelling variants, noun phrases, etc.
-  (let ((word-node-list (xml-get-children (car words-node) 'word)))
-    (mapcar (lambda (x)
-              (car (xml-node-children x)))
-            word-node-list)))
-
-(defun leo--extract-phrases-from-words-list (words)
-  "Returns a list of term plus any phrasal suffixes or variants from an side's WORDS."
-  (let* ((term (car words))
-         (suffix-list
-          (mapcar (lambda (x)
-                    (replace-regexp-in-string (concat term " ") "" x))
-                  words)))
-    (list (cons 'term term)
-          (cons 'suffixes (delete term (cdr suffix-list))))))
+   (let ((word-node-list (xml-get-children (car words-node) 'word)))
+     (mapcar (lambda (x)
+               (car (xml-node-children x)))
+             word-node-list)))
 
 (defun leo--extract-words-from-side (side)
   (leo--extract-phrases-from-words-list
