@@ -306,10 +306,42 @@ Each contains two sides, or results in a pair of languages."
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
 
+(defun leo-add-props-to-match (match)
+  "Add text properties to string MATCH."
+  (add-text-properties (match-beginning 0) (match-end 0)
+                       (list 'button t
+                             'follow-link t
+                             'keymap leo-result-search-map
+                             'fontified t
+                             'face 'leo-link-face
+                             'mouse-face 'highlight
+                             'help-echo (concat
+                                         "Click to search leo for this term"))
+                       match))
+
+(defun leo--propertize-term-in-result (result term)
+  "Add properties to words in RESULT that match words in TERM."
+  (let ((term-spl (split-string term)))
+    (save-match-data
+      ;; try to match and propertize full term first:
+      ;; this avoids making every word in term a separate tab stop if poss
+      (if (string-match term result)
+          (leo-add-props-to-match result)
+        ;; else match each word in term separately:
+        (mapcar (lambda (x)
+                  (string-match x result)
+                  (leo-add-props-to-match result))
+                term-spl))
+      result)))
+
 ;;; PRINTING
 (defun leo--print-single-side (side)
+  "Print a single SIDE of a result entry."
   (let* ((term (cdr (assoc 'term side)))
-         (suffixes (cdr (assoc 'suffixes side)))
+         ;; (term-spl (split-string term))
+         (result-no-prop (cdr (assoc 'result side)))
+         (result (propertize result-no-prop
+                               'face 'leo-auxiliary-face))
          (table (cdr (assoc 'table side))))
     (insert
      (concat
@@ -329,21 +361,8 @@ Each contains two sides, or results in a pair of languages."
             'help-echo (concat "Browse inflexion table for '"
                                term "'"))
            " "))
-      (propertize term
-                  'button t
-                  'follow-link t
-                  'keymap leo-result-search-map
-                  'fontified t
-                  'face 'leo--link-face
-                  'mouse-face 'highlight
-                  'help-echo (concat "Click to search leo for this term"))
-      (if suffixes
-          (propertize
-                              ;; suffixes
-                              (concat " "
-                              (mapconcat #'identity suffixes " "))
-                      'face 'leo--auxiliary-face))
-      ))))
+     (if result
+         (leo--propertize-term-in-result result term))))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
