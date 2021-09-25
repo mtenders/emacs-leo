@@ -402,9 +402,9 @@ WORD is the search term, SIMILAR is a list of suggestions to display if results 
 (defun leo-browse-url-results ()
   "Open the current results for LANG and WORD in external browser."
   (interactive)
-  (let ((lang-full (cdr (assoc leo-language leo-languages-full)))
-        (word (plist-get leo--results-info 'term))
-        (search-url (concat "https://dict.leo.org/" lang-full "-deutsch/" word)))
+  (let* ((lang-full (cdr (assoc leo-language leo-languages-full)))
+         (word (plist-get leo--results-info 'term))
+         (search-url (concat "https://dict.leo.org/" lang-full "-deutsch/" word)))
     ;; TODO maybe prefix arg = 2ndary browser would be better
     (if (browse-url-can-use-xdg-open)
         (browse-url-xdg-open search-url)
