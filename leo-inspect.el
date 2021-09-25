@@ -50,7 +50,8 @@ The result is also saved to variable leo-xml-inspect-result for playing."
             (car (leo--get-entries-from-section
                   (car (leo--get-result-sections-as-list
                         (leo--get-result-section-list
-                         (leo--xml-node-itself xml)))))))
+                         (car leo-xml-inspect-result)))))))
+                         ;; (leo--xml-node-itself xml)))))))
       (setq leo-xml-inspect-single-side-1
             (car (leo--get-sides-from-entry
                   leo-xml-inspect-single-entry)))
