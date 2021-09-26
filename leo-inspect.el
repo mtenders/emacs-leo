@@ -62,3 +62,17 @@ The result is also saved to variable leo-xml-inspect-result for playing."
       (emacs-lisp-mode)
       (pp-buffer)
       )))
+
+(defun leo--inspect-raw-xml (word)
+  "View the parsed xml returned by a query for WORD.
+The result is also saved to variable leo-xml-inspect-result for playing."
+  (interactive "sTranslate: ")
+  (let ((buffer (get-buffer-create "*leo-raw-xml*")))
+    (switch-to-buffer-other-window buffer)
+    (erase-buffer)
+    (goto-char (point-min))
+	(url-insert-file-contents 
+     (leo--generate-url leo-language word))
+    (xml-mode)
+    (auto-fill-mode)
+    (message "consider running sgml-pretty-print.")))
