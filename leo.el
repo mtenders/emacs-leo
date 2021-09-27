@@ -465,9 +465,11 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (leo--translate leo-language (get-text-property (point) 'term )))
 
 (defun leo--translate-word-return-search ()
-  "Translate word on hitting return from language set by 'leo-language' to German."
+  "Translate word or phrase at point from language set by `leo-language' to German."
   (interactive)
-  (let ((text (buffer-substring-no-properties (point) ; we already tabbed to here
+  (let ((text (buffer-substring-no-properties (progn
+                                                (+ (point) 1) ; enter prop range if we only tabbed
+                                                (previous-single-property-change (point) 'button)) ; get range start
                                               (next-single-property-change
                                                (point) 'button))))
     (leo--translate leo-language text)))
