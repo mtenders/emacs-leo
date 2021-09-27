@@ -44,6 +44,10 @@
 ;;; Code:
 (require 'xml)
 
+(defgroup leo nil
+  "Leo dictionary interface."
+  :group 'leo)
+
 (defcustom leo-language "en"
   "Language to translate from to German.
 
@@ -51,6 +55,42 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :type 'string
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
+
+(defcustom leo-browse-url-function nil
+  "The browser that is used to access online dictionaries."
+  :group 'leo
+  :type '(choice
+          (const         :tag "Default" :value nil)
+          (function-item :tag "Emacs W3" :value  browse-url-w3)
+          (function-item :tag "W3 in another Emacs via `gnudoit'"
+                         :value  browse-url-w3-gnudoit)
+          (function-item :tag "Mozilla" :value  browse-url-mozilla)
+          (function-item :tag "Firefox" :value browse-url-firefox)
+          (function-item :tag "Chromium" :value browse-url-chromium)
+          (function-item :tag "Galeon" :value  browse-url-galeon)
+          (function-item :tag "Epiphany" :value  browse-url-epiphany)
+          (function-item :tag "Netscape" :value  browse-url-netscape)
+          (function-item :tag "eww" :value  eww-browse-url)
+          (function-item :tag "Text browser in an xterm window"
+                         :value browse-url-text-xterm)
+          (function-item :tag "Text browser in an Emacs window"
+                         :value browse-url-text-emacs)
+          (function-item :tag "KDE" :value browse-url-kde)
+          (function-item :tag "Elinks" :value browse-url-elinks)
+          (function-item :tag "Specified by `Browse Url Generic Program'"
+                         :value browse-url-generic)
+          (function-item :tag "Default Windows browser"
+                         :value browse-url-default-windows-browser)
+          (function-item :tag "Default Mac OS X browser"
+                         :value browse-url-default-macosx-browser)
+          (function-item :tag "GNOME invoking Mozilla"
+                         :value browse-url-gnome-moz)
+          (function-item :tag "Default browser"
+                         :value browse-url-default-browser)
+          (function      :tag "Your own function")
+          (alist         :tag "Regexp/function association list"
+                         :key-type regexp :value-type function)))
+
 
 (defface leo-link-face
   '((t :inherit warning))
@@ -403,12 +443,13 @@ WORD is the search term, SIMILAR is a list of suggestions to display if results 
           (leo--print-forums (cdr forum-posts))))))))
 
 (defun leo-browse-url-results ()
-  "Open the current results for LANG and WORD in external browser."
+  "Open the current results for LANG and WORD in external browser.
+Uses `leo-browse-url-function' to decide which browser to use."
   (interactive)
   (let* ((lang-full (cdr (assoc leo-language leo-languages-full)))
          (word (plist-get leo--results-info 'term))
          (search-url (concat "https://dict.leo.org/" lang-full "-deutsch/" word)))
-    ;; TODO maybe prefix arg = 2ndary browser would be better
+    ;; TODO leo-browse-url-function
     (if (browse-url-can-use-xdg-open)
         (browse-url-xdg-open search-url)
       (browse-url search-url))))
