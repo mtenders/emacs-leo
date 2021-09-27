@@ -170,9 +170,6 @@ Used to build the URL for external browsing to leo.de.")
 (defun leo--get-words-node-from-side (side)
   (xml-get-children side 'words))
 
-;; (defun leo--get-repr-node-from-side (side)
-;;   (dom-child-by-tag side 'repr))
-
 ;;TODO: convert <br> children to "\n" in place before splitting
 ;; (defun leo--get-repr-children-strings-as-list (side)
 ;;   (split-string (dom-texts
@@ -188,17 +185,6 @@ Used to build the URL for external browsing to leo.de.")
 (defun leo--get-repr-children-strings-as-string-trimmed (side)
   (leo--strip-redundant-scores
    (leo--get-repr-children-strings-as-string side)))
-
-;; (defun leo--get-repr-children-strings-as-list-trimmed (side)
-;;       (mapcar (lambda (x)
-;;                 (leo--strip-redundant-scores x))
-;;               (leo--get-repr-children-strings-as-list side)))
-
-;; (defun leo--strip-redundant-parens (string)
-;;   "Remove redundant ( ) from from STRING if it has them."
-;;   (if (string-match "^_+" string)
-;;       (substring string 1 -1)
-;;     string))
 
 (defun leo--extract-word-strings-as-list (words-node)
    (let ((word-node-list (xml-get-children (car words-node) 'word)))
