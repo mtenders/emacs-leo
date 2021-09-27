@@ -270,13 +270,11 @@ Each contains two sides, or results in a pair of languages."
 
 (defun leo--build-entry-from-sides (entry)
   "Build an ENTRY, ie a list of two sides."
-  (let (
-        ;;(pos (leo--get-entry-part-of-speech entry))
-        (sides (leo--get-sides-from-entry entry)))
+  (let ((sides (leo--get-sides-from-entry entry)))
     (mapcar (lambda (x)
               (list
-               (cons 'term (car (leo--extract-word-strings-as-list
-                            (leo--get-words-node-from-side x))))
+               (cons 'words-list (leo--extract-word-strings-as-list
+                            (leo--get-words-node-from-side x)))
                (cons 'result (leo--get-repr-children-strings-as-string-trimmed x))
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
@@ -301,10 +299,13 @@ Each contains two sides, or results in a pair of languages."
                        (list 'term term)
                        match))
 
-(defun leo--propertize-term-in-result (result term)
-  "Add properties to words in RESULT that match words in TERM."
-  (let ((term-spl (split-string term)))
-    (save-match-data
+(defun leo--propertize-words-list-in-result (result leo-words-list)
+  "Add properties to words in RESULT that match words in WORDS-LIST.
+List items in words-list are applied as both split lists and whole strings."
+  (while leo-words-list
+    (let* ((term (car leo-words-list))
+           (term-spl (split-string term)))
+      (save-match-data
       ;; try to match and propertize full term first:
       ;; this avoids making each word in term a separate tab stop
       (if (string-match term result)
@@ -322,14 +323,14 @@ Each contains two sides, or results in a pair of languages."
                   (string-match x result)
                   (leo-add-props-to-match result x)
                   (leo-add-term-prop-to-match result x))
-                term-spl))
-      result)))
+                term-spl))))
+    (setq leo-words-list (cdr leo-words-list)))
+      result)
 
 ;;; PRINTING
 (defun leo--print-single-side (side)
   "Print a single SIDE of a result entry."
-  (let* ((term (cdr (assoc 'term side)))
-         ;; (term-spl (split-string term))
+  (let* ((words-list (cdr (assoc 'words-list side)))
          (result-no-prop (cdr (assoc 'result side)))
          (result (propertize result-no-prop
                                'face 'leo-auxiliary-face))
@@ -350,10 +351,10 @@ Each contains two sides, or results in a pair of languages."
             'face 'leo-auxiliary-face
             'mouse-face 'highlight
             'help-echo (concat "Browse inflexion table for '"
-                               term "'"))
+                               (car words-list) "'"))
            " "))
-     (if result
-         (leo--propertize-term-in-result result term))))))
+      (if result
+          (leo--propertize-words-list-in-result result words-list))))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
