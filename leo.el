@@ -455,11 +455,10 @@ Used if `leo--print-translation' for WORD has no results. Results are links to s
                   sim-word-nodes))
          (sim-words-propertized
           (mapcar (lambda (x)
-                    ;; (let ((sim-map (make-sparse-keymap)))
-                      ;; (define-key sim-map [mouse-2] 'leo--translate-word-click-search)
                       (propertize x
                                   'button t
                                   'follow-link t
+                                  'term x
                                   'keymap leo-result-search-map
                                   'fontified t
                                   'face 'leo-link-face
