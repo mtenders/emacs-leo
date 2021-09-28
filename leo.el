@@ -352,40 +352,47 @@ Each contains two sides, or results in a pair of languages."
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
-  (let ((has-variants-p (if (string-match (or "AE" "espAE") result) t)))
-  (while leo-words-list
-    (let* ((term (car leo-words-list))
-           (term-spl (split-string term)))
-      (save-match-data
-      ;; try to match and propertize full term first:
-      ;; this avoids making each word in term a separate tab stop
-      (if (string-match term result)
-          (progn
-            ;; add properties to whole term string (for tab stops):
-            (leo--add-props-to-match result term)
-            ;; add term property separately to each word in term list
-            ;; for click to search each word separately, not whole term string:
+  (let ((has-variants-p (if (or (string-match "BE" result)
+                                (string-match "AE" result)
+                                (string-match "espAE" result)
+                                (string-match "espBE" result))
+                            t))
+        (leo-last-match-end))
+    (while leo-words-list
+      (let* ((term (car leo-words-list))
+             (term-spl (split-string term)))
+        (save-match-data
+          (if (string-match term result leo-last-match-end) ; start from last match
+              ;; try to match and propertize full term first:
+              ;; this avoids making each word in term a separate tab stop
+              (progn
+                ;; add properties to whole term string (for tab stops):
+                (leo--add-props-to-match result term)
+                ;; add term property separately to each word in term list
+                ;; for click to search each word separately, not whole term string:
+                (mapcar (lambda (x)
+                          (string-match x result)
+                          (leo--add-term-prop-to-match result x))
+                        term-spl)
+                ;; this presumes any repetion comes after not before any variant
+                (setq leo-last-match-end (match-end 0)))
+            ;; ELSE match each word in term separately:
             (mapcar (lambda (x)
-                      (string-match x result)
-                      (leo--add-term-prop-to-match result x))
-                    term-spl))
-        ;; else match each word in term separately:
-        (mapcar (lambda (x)
-                  (if (string-match x result)
-                      (progn
-                        (leo--add-props-to-match result x)
-                        (leo--add-term-prop-to-match result x)))
-                  ;; match again starting at end of prev match
-                  (if has-variants-p ; only run on variants
-                      (if (string-match x result (match-end 0))
+                      (if (string-match x result)
                           (progn
                             (leo--add-props-to-match result x)
-                            (leo--add-term-prop-to-match result x)))))
-                term-spl))))
-    (setq leo-words-list (cdr leo-words-list)))
-  (if has-variants-p ; only run on variants
-      (leo--propertize-variant-markers-in-result result))
-  result))
+                            (leo--add-term-prop-to-match result x)))
+                      ;; match again starting at end of prev match
+                      (if has-variants-p ; only run on variants
+                          (if (string-match x result (match-end 0))
+                              (progn
+                                (leo--add-props-to-match result x)
+                                (leo--add-term-prop-to-match result x)))))
+                    term-spl))))
+      (setq leo-words-list (cdr leo-words-list)))
+    (if has-variants-p ; only run on variants
+        (leo--propertize-variant-markers-in-result result))
+    result))
 
 ;;; PRINTING
 (defun leo--print-single-side (side)
