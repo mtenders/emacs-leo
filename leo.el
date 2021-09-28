@@ -352,7 +352,7 @@ Each contains two sides, or results in a pair of languages."
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
-  (let ((has-variants-p (if (string-match "AE" result) t)))
+  (let ((has-variants-p (if (string-match (or "AE" "espAE") result) t)))
   (while leo-words-list
     (let* ((term (car leo-words-list))
            (term-spl (split-string term)))
@@ -376,7 +376,6 @@ List items in words-list are applied as both split lists and whole strings."
                         (leo--add-props-to-match result x)
                         (leo--add-term-prop-to-match result x)))
                   ;; match again starting at end of prev match
-                  ;; to handle AE/BE variants that repeat
                   (if has-variants-p ; only run on variants
                       (if (string-match x result (match-end 0))
                           (progn
