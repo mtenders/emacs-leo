@@ -379,7 +379,7 @@ List items in words-list are applied as both split lists and whole strings."
                 ;; add term property separately to each word in term list
                 ;; for click to search each word separately, not whole term string:
                 (mapcar (lambda (x)
-                          (string-match x result)
+                          (string-match x result leo-last-match-end)
                           (leo--add-term-prop-to-match result x))
                         term-spl)
                 ;; this presumes any repetion comes after not before any variant
