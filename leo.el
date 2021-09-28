@@ -352,6 +352,7 @@ Each contains two sides, or results in a pair of languages."
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
+  (let ((has-variants-p (if (string-match "AE" result) t)))
   (while leo-words-list
     (let* ((term (car leo-words-list))
            (term-spl (split-string term)))
@@ -371,19 +372,21 @@ List items in words-list are applied as both split lists and whole strings."
         ;; else match each word in term separately:
         (mapcar (lambda (x)
                   (if (string-match x result)
-                      (leo--add-props-to-match result x)
-                    (leo--add-term-prop-to-match result x))
+                      (progn
+                        (leo--add-props-to-match result x)
+                        (leo--add-term-prop-to-match result x)))
                   ;; match again starting at end of prev match
                   ;; to handle AE/BE variants that repeat
-                  ;; NB: this will sometimes propertize p.p.!
-                  (if (string-match x result (match-end 0))
-                      (leo--add-props-to-match result x)
-                    (leo--add-term-prop-to-match result x)))
+                  (if has-variants-p ; only run on variants
+                      (if (string-match x result (match-end 0))
+                          (progn
+                            (leo--add-props-to-match result x)
+                            (leo--add-term-prop-to-match result x)))))
                 term-spl))))
     (setq leo-words-list (cdr leo-words-list)))
-  (if (string-match "AE" result) ; only run on variants
+  (if has-variants-p ; only run on variants
       (leo--propertize-variant-markers-in-result result))
-  result)
+  result))
 
 ;;; PRINTING
 (defun leo--print-single-side (side)
