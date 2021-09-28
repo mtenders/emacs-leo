@@ -325,7 +325,7 @@ Each contains two sides, or results in a pair of languages."
 
 (defun leo--propertize-past-participles (result)
   (save-match-data
-    (when (string-match "|[ a-z,/]+|" result) ; if we have past participles
+    (when (string-match "|[ a-z,/]+,+[ a-z,/]|" result) ; if we have past participles; regex tries to mandate a comma to differentiate this from DE adj. that also use "|"
       (set-text-properties (match-beginning 0) (match-end 0)
                            (list 'face 'leo-auxiliary-face)
                            result))
