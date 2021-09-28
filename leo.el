@@ -117,6 +117,11 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   "Face used for search terms in search results."
   :group 'leo)
 
+(defface leo-variant-marker-face
+  '((t :inherit font-lock-comment-face :slant italic))
+  "Face used to fade and italicise language variant markers like 'BE', 'AE'."
+  :group 'leo)
+
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
     ;; (let ((map (copy-keymap shr-map)))
@@ -305,7 +310,7 @@ Each contains two sides, or results in a pair of languages."
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
 
-(defun leo-add-props-to-match (match term)
+(defun leo--add-props-to-match (match term)
   "Add text properties to string MATCH, including TERM."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'button t
@@ -318,12 +323,31 @@ Each contains two sides, or results in a pair of languages."
                                          "Click to search leo for this term"))
                        match))
 
-
-(defun leo-add-term-prop-to-match (match term)
+(defun leo--add-term-prop-to-match (match term)
   "Add text property 'term TERM to string MATCH."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'term term)
                        match))
+
+(defun leo--add-ital-prop-to-variant-marker (match)
+  "Add text property ``leo-variant-marker-face' to string MATCH."
+  (add-text-properties (match-beginning 0) (match-end 0)
+                       (list 'face 'leo-variant-marker-face)
+                       match))
+
+(defun leo--propertize-variant-markers-in-result (result)
+  "Add property `leo-variant-marker-face' to variant markers in RESULT."
+  (let ((v-marker '("BE" "AE" "espAE" "espBE"))
+        (case-fold-search nil)) ; case-sensitive matching
+    (save-match-data
+      (mapcar (lambda (x)
+                (if (string-match x result)
+                    (leo--add-ital-prop-to-variant-marker result))
+                ;; match again starting from end of prev match
+                (if (string-match x result (match-end 0))
+                    (leo--add-ital-prop-to-variant-marker result)))
+              v-marker)))
+  result)
 
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in WORDS-LIST.
@@ -337,21 +361,29 @@ List items in words-list are applied as both split lists and whole strings."
       (if (string-match term result)
           (progn
             ;; add properties to whole term string (for tab stops):
-            (leo-add-props-to-match result term)
+            (leo--add-props-to-match result term)
             ;; add term property separately to each word in term list
             ;; for click to search each word separately, not whole term string:
             (mapcar (lambda (x)
                       (string-match x result)
-                      (leo-add-term-prop-to-match result x))
+                      (leo--add-term-prop-to-match result x))
                     term-spl))
         ;; else match each word in term separately:
         (mapcar (lambda (x)
-                  (string-match x result)
-                  (leo-add-props-to-match result x)
-                  (leo-add-term-prop-to-match result x))
+                  (if (string-match x result)
+                      (leo--add-props-to-match result x)
+                    (leo--add-term-prop-to-match result x))
+                  ;; match again starting at end of prev match
+                  ;; to handle AE/BE variants that repeat
+                  ;; NB: this will sometimes propertize p.p.!
+                  (if (string-match x result (match-end 0))
+                      (leo--add-props-to-match result x)
+                    (leo--add-term-prop-to-match result x)))
                 term-spl))))
     (setq leo-words-list (cdr leo-words-list)))
-      result)
+  (if (string-match "AE" result) ; only run on variants
+      (leo--propertize-variant-markers-in-result result))
+  result)
 
 ;;; PRINTING
 (defun leo--print-single-side (side)
@@ -380,7 +412,8 @@ List items in words-list are applied as both split lists and whole strings."
                                (car words-list) "'"))
            " "))
       (if result
-          (leo--propertize-words-list-in-result result words-list))))))
+          (leo--propertize-words-list-in-result result words-list))
+      ))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
