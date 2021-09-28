@@ -117,8 +117,8 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   "Face used for search terms in search results."
   :group 'leo)
 
-(defface leo-variant-marker-face
-  '((t :inherit font-lock-comment-face :slant italic))
+(defface leo-case-and-variant-marker-face
+  '((t :inherit font-lock-comment-face :slant italic :height 0.8))
   "Face used to fade and italicise language variant markers like 'BE', 'AE'."
   :group 'leo)
 
@@ -337,24 +337,38 @@ Each contains two sides, or results in a pair of languages."
                        (list 'term term)
                        match))
 
-(defun leo--add-ital-prop-to-variant-marker (match)
-  "Add text property ``leo-variant-marker-face' to string MATCH."
+(defun leo--add-ital-prop-to-case-and-variant-marker (match)
+  "Add text property ``leo-case-and-variant-marker-face' to string MATCH."
   (set-text-properties (match-beginning 0) (match-end 0)
-                       (list 'face 'leo-variant-marker-face)
+                       (list 'face 'leo-case-and-variant-marker-face)
                        match))
 
 (defun leo--propertize-variant-markers-in-result (result)
-  "Add property `leo-variant-marker-face' to variant markers in RESULT."
+  "Add property `leo-case-and-variant-marker-face' to variant markers in RESULT."
   (let ((v-marker '("BE" "AE" "espAE" "espBE"))
         (case-fold-search nil)) ; case-sensitive matching
     (save-match-data
       (mapcar (lambda (x)
                 (if (string-match x result)
-                    (leo--add-ital-prop-to-variant-marker result))
+                    (leo--add-ital-prop-to-case-and-variant-marker result))
                 ;; match again starting from end of prev match
                 (if (string-match x result (match-end 0))
-                    (leo--add-ital-prop-to-variant-marker result)))
+                    (leo--add-ital-prop-to-case-and-variant-marker result)))
               v-marker)))
+  result)
+
+(defun leo--propertize-case-markers-in-result (result)
+  "Add property `leo-case-and-variant-marker-face' to case markers in RESULT."
+  (let ((c-marker '("Dat." "Nom." "Gen." "Akk."))
+        (case-fold-search nil)) ; case-sensitive matching
+    (save-match-data
+      (mapcar (lambda (x)
+                (if (string-match x result)
+                    (leo--add-ital-prop-to-case-and-variant-marker result))
+                ;; match again starting from end of prev match
+                (if (string-match x result (match-end 0))
+                    (leo--add-ital-prop-to-case-and-variant-marker result)))
+              c-marker)))
   result)
 
 (defun leo--propertize-words-list-in-result (result leo-words-list)
@@ -365,6 +379,11 @@ List items in words-list are applied as both split lists and whole strings."
                                 (string-match "espAE" result)
                                 (string-match "espBE" result))
                             t))
+        (has-cases-p (if (or (string-match "Nom." result)
+                             (string-match "Akk." result)
+                             (string-match "Dat." result)
+                             (string-match "Gen." result))
+                         t))
         (leo-last-match-end))
     (while leo-words-list
       (let* ((term (car leo-words-list))
@@ -398,8 +417,10 @@ List items in words-list are applied as both split lists and whole strings."
                                 (leo--add-term-prop-to-match result x)))))
                     term-spl))))
       (setq leo-words-list (cdr leo-words-list)))
-    (if has-variants-p ; only run on variants
+    (when has-variants-p ; only run on variants
         (leo--propertize-variant-markers-in-result result))
+    (when has-cases-p
+      (leo--propertize-case-markers-in-result result))
     ;; handle any accidental propertizing of past participles:
     (leo--propertize-past-participles result)
     result))
