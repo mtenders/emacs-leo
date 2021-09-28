@@ -448,11 +448,13 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (interactive)
   (let* ((lang-full (cdr (assoc leo-language leo-languages-full)))
          (word (plist-get leo--results-info 'term))
-         (search-url (concat "https://dict.leo.org/" lang-full "-deutsch/" word)))
-    ;; TODO leo-browse-url-function
-    (if (browse-url-can-use-xdg-open)
-        (browse-url-xdg-open search-url)
-      (browse-url search-url))))
+         (search-url (concat "https://dict.leo.org/" lang-full "-deutsch/" word))
+         (browse-url-browser-function (or leo-browse-url-function
+                                          (if (browse-url-can-use-xdg-open)
+                                              (browse-url-xdg-open search-url))
+                                          browse-url-secondary-browser-function
+                                          browse-url-browser-function)))
+    (browse-url search-url)))
 
 (defun leo--search-term-with-dictcc ()
   "Repeat current search with dict.cc."
