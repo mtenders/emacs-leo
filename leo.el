@@ -371,6 +371,29 @@ Each contains two sides, or results in a pair of languages."
               c-marker)))
   result)
 
+(defun leo--space-before-term (leo-words-list result)
+  "Make sure we have a space before any words in WORD-LIST in string RESULT.
+This is to handle the loss of our <br> tags in the XML."
+  ;; needs to work on second variant, not on first item in words-list
+  (let ((result result))
+    (save-match-data
+      (while leo-words-list
+        (let ((term (car leo-words-list)))
+          ;; if term preceded by neither space nor newline
+          (when (string-match (concat "[^[:blank:]\n]"
+                                      term)
+                              result)
+            (setq result (replace-match
+                          ;; regex matches preceding car so we get it
+                          (concat (substring (match-string 0 result) 0 1)
+                                  ;; then a space
+                                  " "
+                                  ;; then our term
+                                  (substring (match-string 0 result) 1 nil))
+                          t nil result))))
+        (setq leo-words-list (cdr leo-words-list))))
+    result))
+
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
@@ -430,8 +453,9 @@ List items in words-list are applied as both split lists and whole strings."
   "Print a single SIDE of a result entry."
   (let* ((words-list (cdr (assoc 'words-list side)))
          (result-no-prop (cdr (assoc 'result side)))
-         (result (propertize result-no-prop
-                               'face 'leo-auxiliary-face))
+         (result-prop (propertize result-no-prop
+                                  'face 'leo-auxiliary-face))
+         (result (leo--space-before-term words-list result-prop))
          (table (cdr (assoc 'table side))))
     (insert
      (concat
@@ -451,8 +475,8 @@ List items in words-list are applied as both split lists and whole strings."
             'help-echo (concat "Browse inflexion table for '"
                                (car words-list) "'"))
            " "))
-      (if result
-          (leo--propertize-words-list-in-result result words-list))
+      (when result
+            (leo--propertize-words-list-in-result result words-list))
       ))))
 
 (defun leo--print-single-entry (entry)
