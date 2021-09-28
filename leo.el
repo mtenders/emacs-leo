@@ -323,6 +323,14 @@ Each contains two sides, or results in a pair of languages."
                                          "Click to search leo for this term"))
                        match))
 
+(defun leo--propertize-past-participles (result)
+  (save-match-data
+    (when (string-match "|[ a-z,/]+|" result) ; if we have past participles
+      (set-text-properties (match-beginning 0) (match-end 0)
+                           (list 'face 'leo-auxiliary-face)
+                           result))
+    result))
+
 (defun leo--add-term-prop-to-match (match term)
   "Add text property 'term TERM to string MATCH."
   (add-text-properties (match-beginning 0) (match-end 0)
@@ -331,7 +339,7 @@ Each contains two sides, or results in a pair of languages."
 
 (defun leo--add-ital-prop-to-variant-marker (match)
   "Add text property ``leo-variant-marker-face' to string MATCH."
-  (add-text-properties (match-beginning 0) (match-end 0)
+  (set-text-properties (match-beginning 0) (match-end 0)
                        (list 'face 'leo-variant-marker-face)
                        match))
 
@@ -392,6 +400,8 @@ List items in words-list are applied as both split lists and whole strings."
       (setq leo-words-list (cdr leo-words-list)))
     (if has-variants-p ; only run on variants
         (leo--propertize-variant-markers-in-result result))
+    ;; handle any accidental propertizing of past participles:
+    (leo--propertize-past-participles result)
     result))
 
 ;;; PRINTING
