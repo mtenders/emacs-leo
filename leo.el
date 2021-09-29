@@ -696,7 +696,7 @@ Optional prefix argument LANG prompts to set language for this search."
                           word))
       ;; else normal search:
       (leo--translate leo-language word)))
-  (message (concat "'t' to search again, 'b' to view in browser"
+  (message (concat "'t' to search again, prefix to choose language, 'b' to view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c' to search with dictcc.el"))))
 
@@ -722,7 +722,7 @@ Optional prefix argument LANG prompts to set language for this search."
                           (current-word)))
       ;; else normal search:
       (leo--translate leo-language (current-word))))
-  (message (concat "'t' to search again, 'b' to view in browser"
+  (message (concat "'t' to search again, prefix to choose language, 'b' to view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c' to search with dictcc.el"))))
 
