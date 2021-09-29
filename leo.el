@@ -1,14 +1,16 @@
 ;;; leo.el --- Interface for dict.leo.org -*- lexical-binding:t -*-
 ;;
 ;; Copyright (C) 2020 M.T. Enders <michael AT enders.io>
+;;               2021 Marty Hiatt <mousebot AT riseup.net>
 ;;
 ;; Author: M.T. Enders <michael AT enders.io>
+;;         Marty Hiatt <mousebot AT riseup.net>
 ;; Created: 21 Oct 2020
 ;;
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: convenience, translate
-;; URL: https://github.com/mtenders/emacs-leo
-;; Version: 0.1
+;; URL: https://git.blast.noho.st/mouse/emacs-leo
+;; Version: 0.2
 ;; Prefix: leo
 ;; Separator: -
 
@@ -19,8 +21,9 @@
 ;; Usage:
 ;;
 ;; This provides the commands leo-translate-word and
-;; leo-translate-at-point.  Both translate from the language set by the
-;; custom variable leo-language to German.
+;; leo-translate-at-point. Both translate between the language set by
+;; the custom variable leo-language, or chosen interactively if called
+;; with a prefix argument, and German.
 ;;
 ;; Available languages: en, es, fr, it, ch, pt, ru, pl
 
