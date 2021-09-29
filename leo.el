@@ -685,43 +685,50 @@ SIMILAR is a list of suggestions to display if there are no results."
 (defun leo-translate-word (word &optional lang)
   "Translate WORD between language set by 'leo-language' and German.
 Show translations in new buffer window.
-Optional prefix argument prompts for a LANGuage to pair with German."
+Optional prefix argument LANG prompts to set language for this search."
   (interactive "sTranslate: \nP")
   (let* ((language-candidates
           ;; transpose alist for comp read to display full lang name
           (mapcar (lambda (x)
                     (cons (cdr x) (car x)))
-                  leo-languages-full))
-         (lang (if current-prefix-arg
-                   (completing-read
-                    (format "Language (to pair with German) (%s): "
-                            (car (rassoc leo-language language-candidates)))
-                    language-candidates nil t nil nil
-                    (rassoc leo-language language-candidates))
-                 leo-language)))
-    (leo--translate (cdr (assoc lang language-candidates)) word))
+                  leo-languages-full)))
+    (if current-prefix-arg
+        ;; if prefix: prompt for language to search for:
+        (let ((lang (completing-read
+                     (format "Language (to pair with German) (%s): "
+                             (car (rassoc leo-language language-candidates)))
+                     language-candidates nil t nil nil
+                     (rassoc leo-language language-candidates))))
+          (leo--translate (cdr (assoc lang language-candidates))
+                          word))
+      ;; else normal search:
+      (leo--translate leo-language word)))
   (message (concat "'t' to search again, 'b' to view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c' to search with dictcc.el"))))
 
 ;;;###autoload
 (defun leo-translate-at-point (&optional lang)
-  "Translate word under cursor between language set by 'leo-language' and German.
-Show translations in new buffer window."
+  "Translate word under cursor between `leo-language' and German.
+Show translations in new buffer window.
+Optional prefix argument LANG prompts to set language for this search."
   (interactive "P")
   (let* ((language-candidates
           ;; transpose alist so comp read displays full lang name
           (mapcar (lambda (x)
                     (cons (cdr x) (car x)))
-                  leo-languages-full))
-         (lang (if current-prefix-arg
-                   (completing-read
-                    (format "Language (to pair with German) (%s): "
-                            (car (rassoc leo-language language-candidates)))
-                    language-candidates nil t nil nil
-                    (rassoc leo-language language-candidates))
-                 leo-language)))
-    (leo--translate (cdr (assoc lang language-candidates)) (current-word)))
+                  leo-languages-full)))
+    (if current-prefix-arg
+        ;; if prefix: prompt for language to search for:
+        (let ((lang (completing-read
+                     (format "Language (to pair with German) (%s): "
+                             (car (rassoc leo-language language-candidates)))
+                     language-candidates nil t nil nil
+                     (rassoc leo-language language-candidates))))
+          (leo--translate (cdr (assoc lang language-candidates))
+                          (current-word)))
+      ;; else normal search:
+      (leo--translate leo-language (current-word))))
   (message (concat "'t' to search again, 'b' to view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c' to search with dictcc.el"))))
