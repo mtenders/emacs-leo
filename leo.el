@@ -117,6 +117,11 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   "Face used for search terms in search results."
   :group 'leo)
 
+(defface leo-case-and-variant-marker-face
+  '((t :inherit font-lock-comment-face :slant italic :height 0.8))
+  "Face used to fade and italicise language variant markers like 'BE', 'AE'."
+  :group 'leo)
+
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
     ;; (let ((map (copy-keymap shr-map)))
@@ -305,7 +310,7 @@ Each contains two sides, or results in a pair of languages."
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
 
-(defun leo-add-props-to-match (match term)
+(defun leo--add-props-to-match (match term)
   "Add text properties to string MATCH, including TERM."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'button t
@@ -318,48 +323,139 @@ Each contains two sides, or results in a pair of languages."
                                          "Click to search leo for this term"))
                        match))
 
+(defun leo--propertize-past-participles (result)
+  (save-match-data
+    (when (string-match "|[ a-z,/]+,+[ a-z,/]+|" result) ; if we have past participles; regex tries to mandate a comma to differentiate this from DE adj. that also use "|"
+      (set-text-properties (match-beginning 0) (match-end 0)
+                           (list 'face 'leo-auxiliary-face)
+                           result))
+    result))
 
-(defun leo-add-term-prop-to-match (match term)
+(defun leo--add-term-prop-to-match (match term)
   "Add text property 'term TERM to string MATCH."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'term term)
                        match))
 
+(defun leo--add-ital-prop-to-case-and-variant-marker (match)
+  "Add text property ``leo-case-and-variant-marker-face' to string MATCH."
+  (set-text-properties (match-beginning 0) (match-end 0)
+                       (list 'face 'leo-case-and-variant-marker-face)
+                       match))
+
+(defun leo--propertize-variant-markers-in-result (result)
+  "Add property `leo-case-and-variant-marker-face' to variant markers in RESULT."
+  (let ((v-marker '("BE" "AE" "espAE" "espBE"))
+        (case-fold-search nil)) ; case-sensitive matching
+    (save-match-data
+      (mapcar (lambda (x)
+                (if (string-match x result)
+                    (leo--add-ital-prop-to-case-and-variant-marker result))
+                ;; match again starting from end of prev match
+                (if (string-match x result (match-end 0))
+                    (leo--add-ital-prop-to-case-and-variant-marker result)))
+              v-marker)))
+  result)
+
+(defun leo--propertize-case-markers-in-result (result)
+  "Add property `leo-case-and-variant-marker-face' to case markers in RESULT."
+  (let ((c-marker '("Dat." "Nom." "Gen." "Akk."))
+        (case-fold-search nil)) ; case-sensitive matching
+    (save-match-data
+      (mapcar (lambda (x)
+                (if (string-match x result)
+                    (leo--add-ital-prop-to-case-and-variant-marker result))
+                ;; match again starting from end of prev match
+                (if (string-match x result (match-end 0))
+                    (leo--add-ital-prop-to-case-and-variant-marker result)))
+              c-marker)))
+  result)
+
+(defun leo--space-before-term (leo-words-list result)
+  "Make sure we have a space before any words in WORD-LIST in string RESULT.
+This is to handle the loss of our <br> tags in the XML."
+  ;; needs to work on second variant, not on first item in words-list
+  (let ((result result))
+    (save-match-data
+      (while leo-words-list
+        (let ((term (car leo-words-list)))
+          ;; if term preceded by neither space nor newline
+          (when (string-match (concat "[^[:blank:]\n]"
+                                      term)
+                              result)
+            (setq result (replace-match
+                          ;; regex matches preceding car so we get it
+                          (concat (substring (match-string 0 result) 0 1)
+                                  ;; then a space
+                                  " "
+                                  ;; then our term
+                                  (substring (match-string 0 result) 1 nil))
+                          t nil result))))
+        (setq leo-words-list (cdr leo-words-list))))
+    result))
+
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
-  (while leo-words-list
-    (let* ((term (car leo-words-list))
-           (term-spl (split-string term)))
-      (save-match-data
-      ;; try to match and propertize full term first:
-      ;; this avoids making each word in term a separate tab stop
-      (if (string-match term result)
-          (progn
-            ;; add properties to whole term string (for tab stops):
-            (leo-add-props-to-match result term)
-            ;; add term property separately to each word in term list
-            ;; for click to search each word separately, not whole term string:
+  (let ((has-variants-p (if (or (string-match "BE" result)
+                                (string-match "AE" result)
+                                (string-match "espAE" result)
+                                (string-match "espBE" result))
+                            t))
+        (has-cases-p (if (or (string-match "Nom." result)
+                             (string-match "Akk." result)
+                             (string-match "Dat." result)
+                             (string-match "Gen." result))
+                         t))
+        (leo-last-match-end))
+    (while leo-words-list
+      (let* ((term (car leo-words-list))
+             (term-spl (split-string term)))
+        (save-match-data
+          (if (string-match term result leo-last-match-end) ; start from last match
+              ;; try to match and propertize full term first:
+              ;; this avoids making each word in term a separate tab stop
+              (progn
+                ;; add properties to whole term string (for tab stops):
+                (leo--add-props-to-match result term)
+                ;; add term property separately to each word in term list
+                ;; for click to search each word separately, not whole term string:
+                (mapcar (lambda (x)
+                          (string-match x result leo-last-match-end)
+                          (leo--add-term-prop-to-match result x))
+                        term-spl)
+                ;; this presumes any repetion comes after not before any variant
+                (setq leo-last-match-end (match-end 0)))
+            ;; ELSE match each word in term separately:
             (mapcar (lambda (x)
-                      (string-match x result)
-                      (leo-add-term-prop-to-match result x))
-                    term-spl))
-        ;; else match each word in term separately:
-        (mapcar (lambda (x)
-                  (string-match x result)
-                  (leo-add-props-to-match result x)
-                  (leo-add-term-prop-to-match result x))
-                term-spl))))
-    (setq leo-words-list (cdr leo-words-list)))
-      result)
+                      (if (string-match x result)
+                          (progn
+                            (leo--add-props-to-match result x)
+                            (leo--add-term-prop-to-match result x)))
+                      ;; match again starting at end of prev match
+                      (if has-variants-p ; only run on variants
+                          (if (string-match x result (match-end 0))
+                              (progn
+                                (leo--add-props-to-match result x)
+                                (leo--add-term-prop-to-match result x)))))
+                    term-spl))))
+      (setq leo-words-list (cdr leo-words-list)))
+    (when has-variants-p ; only run on variants
+        (leo--propertize-variant-markers-in-result result))
+    (when has-cases-p
+      (leo--propertize-case-markers-in-result result))
+    ;; handle any accidental propertizing of past participles:
+    (leo--propertize-past-participles result)
+    result))
 
 ;;; PRINTING
 (defun leo--print-single-side (side)
   "Print a single SIDE of a result entry."
   (let* ((words-list (cdr (assoc 'words-list side)))
          (result-no-prop (cdr (assoc 'result side)))
-         (result (propertize result-no-prop
-                               'face 'leo-auxiliary-face))
+         (result-prop (propertize result-no-prop
+                                  'face 'leo-auxiliary-face))
+         (result (leo--space-before-term words-list result-prop))
          (table (cdr (assoc 'table side))))
     (insert
      (concat
@@ -379,8 +475,9 @@ List items in words-list are applied as both split lists and whole strings."
             'help-echo (concat "Browse inflexion table for '"
                                (car words-list) "'"))
            " "))
-      (if result
-          (leo--propertize-words-list-in-result result words-list))))))
+      (when result
+            (leo--propertize-words-list-in-result result words-list))
+      ))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
@@ -585,19 +682,32 @@ SIMILAR is a list of suggestions to display if there are no results."
      similar-list)))
 
 ;;;###autoload
-(defun leo-translate-word (word)
-  "Translate WORD from language set by 'leo-language' to German.
-Show translations in new buffer window."
-  (interactive "sTranslate: ")
-  (leo--translate leo-language word)
+(defun leo-translate-word (word &optional lang)
+  "Translate WORD between language set by 'leo-language' and German.
+Show translations in new buffer window.
+Optional prefix argument prompts for a LANGuage to pair with German."
+  (interactive "sTranslate: \nP")
+  (let* ((language-candidates
+          ;; transpose alist for comp read to display full lang name
+          (mapcar (lambda (x)
+                    (cons (cdr x) (car x)))
+                  leo-languages-full))
+         (lang (if current-prefix-arg
+                   (completing-read
+                    (format "Language (to pair with German) (%s): "
+                            (car (rassoc leo-language language-candidates)))
+                    language-candidates nil t nil nil
+                    (rassoc leo-language language-candidates))
+                 leo-language)))
+    (leo--translate (cdr (assoc lang language-candidates)) word))
   (message (concat "'t' to search again, 'b' to view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c' to search with dictcc.el"))))
 
 ;;;###autoload
 (defun leo-translate-at-point ()
-  "Translate word under cursor from language set by 'leo-language' to German.
-Show translations in new buffer windown."
+  "Translate word under cursor between language set by 'leo-language' and German.
+Show translations in new buffer window."
   (interactive)
   (leo--translate leo-language (current-word)))
 
