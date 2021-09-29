@@ -119,7 +119,7 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
 
 (defface leo-case-and-variant-marker-face
   '((t :inherit font-lock-comment-face :slant italic :height 0.8))
-  "Face used to fade and italicise language variant markers like 'BE', 'AE'."
+  "Face used to fade and italicise language case markers and variant markers in results."
   :group 'leo)
 
 (defvar leo-result-search-map
@@ -215,12 +215,6 @@ Used to build the URL for external browsing to leo.de.")
 (defun leo--get-words-node-from-side (side)
   (xml-get-children side 'words))
 
-;;TODO: convert <br> children to "\n" in place before splitting
-;; (defun leo--get-repr-children-strings-as-list (side)
-;;   (split-string (dom-texts
-;;                  (dom-child-by-tag side 'repr)
-;;                  "")))
-
 (defun leo--get-repr-children-strings-as-string (side)
   (dom-texts (dom-child-by-tag side 'repr) ""))
 
@@ -236,11 +230,6 @@ Used to build the URL for external browsing to leo.de.")
      (mapcar (lambda (x)
                (car (xml-node-children x)))
              word-node-list)))
-
-(defun leo--extract-words-from-side (side)
-  (leo--extract-phrases-from-words-list
-   (leo--extract-word-strings-as-list
-    (leo--get-words-node-from-side side))))
 
 (defun leo--strip-trailing-period (string)
   "Remove trailing period from STRING if it has one."
@@ -310,7 +299,7 @@ Each contains two sides, or results in a pair of languages."
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
 
-(defun leo--add-props-to-match (match term)
+(defun leo--add-props-to-match (match)
   "Add text properties to string MATCH, including TERM."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'button t
@@ -324,8 +313,11 @@ Each contains two sides, or results in a pair of languages."
                        match))
 
 (defun leo--propertize-past-participles (result)
+  "Set the properties of past participles in RESULT to `leo-auxiliary-face'."
   (save-match-data
-    (when (string-match "|[ a-z,/]+,+[ a-z,/]+|" result) ; if we have past participles; regex tries to mandate a comma to differentiate this from DE adj. that also use "|"
+    (when (string-match "|[ a-z,/]+,+[ a-z,/]+|" result)
+      ;; if we have past participles; regex tries to mandate a comma to
+      ;; differentiate this from DE adj. that also use "|"
       (set-text-properties (match-beginning 0) (match-end 0)
                            (list 'face 'leo-auxiliary-face)
                            result))
@@ -348,7 +340,7 @@ Each contains two sides, or results in a pair of languages."
   (let ((v-marker '("BE" "AE" "espAE" "espBE"))
         (case-fold-search nil)) ; case-sensitive matching
     (save-match-data
-      (mapcar (lambda (x)
+      (mapc (lambda (x)
                 (if (string-match x result)
                     (leo--add-ital-prop-to-case-and-variant-marker result))
                 ;; match again starting from end of prev match
@@ -362,7 +354,7 @@ Each contains two sides, or results in a pair of languages."
   (let ((c-marker '("Dat." "Nom." "Gen." "Akk."))
         (case-fold-search nil)) ; case-sensitive matching
     (save-match-data
-      (mapcar (lambda (x)
+      (mapc (lambda (x)
                 (if (string-match x result)
                     (leo--add-ital-prop-to-case-and-variant-marker result))
                 ;; match again starting from end of prev match
@@ -372,7 +364,7 @@ Each contains two sides, or results in a pair of languages."
   result)
 
 (defun leo--space-before-term (leo-words-list result)
-  "Make sure we have a space before any words in WORD-LIST in string RESULT.
+  "Ensure a space before any words in LEO-WORDS-LIST in string RESULT.
 This is to handle the loss of our <br> tags in the XML."
   ;; needs to work on second variant, not on first item in words-list
   (let ((result result))
@@ -395,7 +387,7 @@ This is to handle the loss of our <br> tags in the XML."
     result))
 
 (defun leo--propertize-words-list-in-result (result leo-words-list)
-  "Add properties to words in RESULT that match words in WORDS-LIST.
+  "Add properties to words in RESULT that match words in LEO-WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
   (let ((has-variants-p (if (or (string-match "BE" result)
                                 (string-match "AE" result)
@@ -417,26 +409,26 @@ List items in words-list are applied as both split lists and whole strings."
               ;; this avoids making each word in term a separate tab stop
               (progn
                 ;; add properties to whole term string (for tab stops):
-                (leo--add-props-to-match result term)
+                (leo--add-props-to-match result)
                 ;; add term property separately to each word in term list
                 ;; for click to search each word separately, not whole term string:
-                (mapcar (lambda (x)
+                (mapc (lambda (x)
                           (string-match x result leo-last-match-end)
                           (leo--add-term-prop-to-match result x))
                         term-spl)
                 ;; this presumes any repetion comes after not before any variant
                 (setq leo-last-match-end (match-end 0)))
             ;; ELSE match each word in term separately:
-            (mapcar (lambda (x)
+            (mapc (lambda (x)
                       (if (string-match x result)
                           (progn
-                            (leo--add-props-to-match result x)
+                            (leo--add-props-to-match result)
                             (leo--add-term-prop-to-match result x)))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
                           (if (string-match x result (match-end 0))
                               (progn
-                                (leo--add-props-to-match result x)
+                                (leo--add-props-to-match result)
                                 (leo--add-term-prop-to-match result x)))))
                     term-spl))))
       (setq leo-words-list (cdr leo-words-list)))
@@ -468,7 +460,7 @@ List items in words-list are applied as both split lists and whole strings."
             'button t
             'follow-link t
             'shr-url table
-            'keymap leo-inflexion-table-map ;shr-map
+            'keymap leo-inflexion-table-map
             'fontified t
             'face 'leo-auxiliary-face
             'mouse-face 'highlight
@@ -476,8 +468,7 @@ List items in words-list are applied as both split lists and whole strings."
                                (car words-list) "'"))
            " "))
       (when result
-            (leo--propertize-words-list-in-result result words-list))
-      ))))
+            (leo--propertize-words-list-in-result result words-list))))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
@@ -564,21 +555,21 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (leo--translate leo-language (get-text-property (point) 'term )))
 
 (defun leo--translate-word-return-search ()
-  "Translate word or phrase at point from language set by `leo-language' to German.
+  "Translate word or phrase at point between `leo-language' and German.
 Word or phrase at point is determined by button text property."
   (interactive)
   (let ((text (buffer-substring-no-properties
                (progn
-                 (if (looking-back "[ \t\n]") ; enter range if we only tabbed here
+                 (if (looking-back "[ \t\n]" nil) ; enter range if we only tabbed here
                      (forward-char))
                  (previous-single-property-change (point) 'button)) ; get range start
-               (next-single-property-change
-                (point) 'button))))
+               (next-single-property-change (point) 'button))))
     (leo--translate leo-language text)))
 
 (defun leo--did-you-mean (word similar)
   "Print some alternative terms SIMILAR to search for.
-Used if `leo--print-translation' for WORD has no results. Results are links to searches for themselves."
+Used if `leo--print-translation' for WORD has no results.
+Results are links to searches for themselves."
   (let* ((sim-sides (xml-get-children similar 'side))
          (sim-word-nodes (leo--map-get-children sim-sides 'word))
          (sim-word-strings
@@ -608,6 +599,7 @@ Used if `leo--print-translation' for WORD has no results. Results are links to s
       "\n\nHit 't' to search again.\n\n"))))
 
 (defun leo--make-buttons ()
+  "Make all property ranges with button property into buttons."
   (with-current-buffer (get-buffer " *leo*")
     (let ((inhibit-read-only t))
       (save-excursion
@@ -617,20 +609,20 @@ Used if `leo--print-translation' for WORD has no results. Results are links to s
            (goto-char (next-single-property-change (point) 'button))
            (goto-char (next-single-property-change (point) 'button))))))))
 
-;; TODO: don't propertize search term in part participals
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
   (let ((inhibit-read-only t))
     (save-excursion
       (goto-char (point-min))
       (while (search-forward-regexp word nil 'noerror)
-        (let ((props (text-properties-at (- (point) 1))))
-          (remove-text-properties (- (point) (length word)) (point)
-                                  '(face face))
+        ;; (let ((props (text-properties-at (- (point) 1))))
+          ;; (remove-text-properties (- (point) (length word)) (point)
+                                  ;; '(face face))
           (add-text-properties (- (point) (length word)) (point)
-                               '(face leo-match-face)))))))
+                               '(face leo-match-face))))))
 
 (defun leo--print-results-buffer-heading (word)
+  "Insert heading in buffer showing results for WORD."
   (with-current-buffer (get-buffer " *leo*")
     (insert
      (propertize
@@ -638,17 +630,18 @@ Used if `leo--print-translation' for WORD has no results. Results are links to s
       'face 'leo-search-and-forum-face))))
 
 (defun leo--print-results-buffer-forum-heading (word)
-    (with-current-buffer (get-buffer " *leo*")
-      (insert
-       (propertize
-        (concat "leo.de forum results for " word ":\n\n")
-        'face 'leo-search-and-forum-face))))
+  "Insert forum results heading in buffer showing results for WORD."
+  (with-current-buffer (get-buffer " *leo*")
+    (insert
+     (propertize
+      (concat "leo.de forum results for " word ":\n\n")
+      'face 'leo-search-and-forum-face))))
 
 (defun leo--open-translation-buffer (results forums word similar)
   "Print translation RESULTS and FORUMS in temporary buffer.
 The search term WORD is propertized in results.
 SIMILAR is a list of suggestions to display if there are no results."
-  (with-output-to-temp-buffer " *leo*" ; temp-buffer-show-hook makes it help-mode
+  (with-output-to-temp-buffer " *leo*" ; this makes it help-mode
     (leo--print-results-buffer-heading word)
     (leo--print-translation results word similar)
     (leo--print-results-buffer-forum-heading word)
