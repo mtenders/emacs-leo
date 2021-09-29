@@ -149,10 +149,17 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
     ("ru" . "russisch")
     ("pl" . "polnisch"))
     "An alist linking language abbreviations to the full name.
-Used to build the URL for external browsing to leo.de.")
+Used to build the URL for external browsing to leo.de.
+And, reversed, to prompt for language choice when `leo-translate-word'
+and `leo-translate-at-point' are called with a prefix arg.")
 
 (defvar leo--results-info nil
-  "Information about the current results from a leo search. Used to store search term for `leo-browse-url-results'.")
+  "Information about the current results from a leo search. Used
+  to store search term for `leo-browse-url-results', and language
+  searched for `leo-translate-word-return-search' or
+  `leo--translate-word-click-search' after `leo-translate-word'
+  is called with a prefix argument to set a non-default search
+  language.")
 (make-variable-buffer-local 'leo--results-info)
 
 (defun leo--generate-url (lang word)
@@ -553,21 +560,25 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (dictcc (plist-get leo--results-info 'term)))
 
 (defun leo--translate-word-click-search (event)
-  "Translate word on mouse click EVENT from language set by 'leo-language' to German."
+  "Translate word on mouse click EVENT between `leo-language' and German."
   (interactive "e")
-  (leo--translate leo-language (get-text-property (point) 'term )))
+  (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                  leo-language))) ;fallback
+    (leo--translate lang (get-text-property (point) 'term ))))
 
 (defun leo--translate-word-return-search ()
   "Translate word or phrase at point between `leo-language' and German.
 Word or phrase at point is determined by button text property."
   (interactive)
-  (let ((text (buffer-substring-no-properties
+  (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                  leo-language)) ;fallback
+        (text (buffer-substring-no-properties
                (progn
                  (if (looking-back "[ \t\n]" nil) ; enter range if we only tabbed here
                      (forward-char))
                  (previous-single-property-change (point) 'button)) ; get range start
                (next-single-property-change (point) 'button))))
-    (leo--translate leo-language text)))
+    (leo--translate lang text)))
 
 (defun leo--did-you-mean (word similar)
   "Print some alternative terms SIMILAR to search for.
@@ -640,9 +651,10 @@ Results are links to searches for themselves."
       (concat "leo.de forum results for " word ":\n\n")
       'face 'leo-search-and-forum-face))))
 
-(defun leo--open-translation-buffer (results forums word similar)
+(defun leo--open-translation-buffer (results forums word lang similar)
   "Print translation RESULTS and FORUMS in temporary buffer.
 The search term WORD is propertized in results.
+The search is between LANG and German.
 SIMILAR is a list of suggestions to display if there are no results."
   (with-output-to-temp-buffer " *leo*" ; this makes it help-mode
     (leo--print-results-buffer-heading word)
@@ -660,12 +672,12 @@ SIMILAR is a list of suggestions to display if there are no results."
     (local-set-key (kbd "b") 'leo-browse-url-results)
     (when (require 'dictcc nil :noerror)
       (local-set-key (kbd "c") 'leo--search-term-with-dictcc))
-    (setq leo--results-info `(term ,word)))
+    (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1)))
 
 (defun leo--translate (lang word)
-  "Translate WORD from LANG to German."
+  "Translate WORD between LANG and German."
   (let* ((xml (leo--parse-xml
               (leo--generate-url lang word)))
          (section-list (car (leo--get-result-section-list (car xml))))
@@ -675,6 +687,7 @@ SIMILAR is a list of suggestions to display if there are no results."
      (leo--build-sections-list section-list)
      (leo--extract-forum-subject-link-pairs xml)
      word
+     lang
      similar-list)))
 
 ;;;###autoload
@@ -687,19 +700,23 @@ Optional prefix argument LANG prompts to set language for this search."
           ;; transpose alist for comp read to display full lang name
           (mapcar (lambda (x)
                     (cons (cdr x) (car x)))
-                  leo-languages-full)))
+                  leo-languages-full))
+         ;; get stored lang if we are already in a results page:
+         (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                          leo-language))) ;fallback
     (if current-prefix-arg
         ;; if prefix: prompt for language to search for:
-        (let ((lang (completing-read
-                     (format "Language (to pair with German) (%s): "
-                             (car (rassoc leo-language language-candidates)))
-                     language-candidates nil t nil nil
-                     (rassoc leo-language language-candidates))))
-          (leo--translate (cdr (assoc lang language-candidates))
+        (let ((lang-prefix (completing-read
+                            (format "Language (to pair with German) (%s): "
+                                    (car (rassoc leo-language language-candidates)))
+                            language-candidates nil t nil nil
+                            (rassoc leo-language language-candidates))))
+          (leo--translate (cdr (assoc lang-prefix language-candidates))
                           word))
       ;; else normal search:
-      (leo--translate leo-language word)))
-  (message (concat "'t' to search again, prefix to choose language, 'b' to view in browser"
+      (leo--translate lang-stored word)))
+  (message (concat "'t' to search again, prefix to choose
+  language, 'b' to view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c' to search with dictcc.el"))))
 
