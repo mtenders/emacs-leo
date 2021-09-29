@@ -682,19 +682,32 @@ SIMILAR is a list of suggestions to display if there are no results."
      similar-list)))
 
 ;;;###autoload
-(defun leo-translate-word (word)
-  "Translate WORD from language set by 'leo-language' to German.
-Show translations in new buffer window."
-  (interactive "sTranslate: ")
-  (leo--translate leo-language word)
+(defun leo-translate-word (word &optional lang)
+  "Translate WORD between language set by 'leo-language' and German.
+Show translations in new buffer window.
+Optional prefix argument prompts for a LANGuage to pair with German."
+  (interactive "sTranslate: \nP")
+  (let* ((language-candidates
+          ;; transpose alist for comp read to display full lang name
+          (mapcar (lambda (x)
+                    (cons (cdr x) (car x)))
+                  leo-languages-full))
+         (lang (if current-prefix-arg
+                   (completing-read
+                    (format "Language (to pair with German) (%s): "
+                            (car (rassoc leo-language language-candidates)))
+                    language-candidates nil t nil nil
+                    (rassoc leo-language language-candidates))
+                 leo-language)))
+    (leo--translate (cdr (assoc lang language-candidates)) word))
   (message (concat "'t' to search again, 'b' to view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c' to search with dictcc.el"))))
 
 ;;;###autoload
 (defun leo-translate-at-point ()
-  "Translate word under cursor from language set by 'leo-language' to German.
-Show translations in new buffer windown."
+  "Translate word under cursor between language set by 'leo-language' and German.
+Show translations in new buffer window."
   (interactive)
   (leo--translate leo-language (current-word)))
 
