@@ -715,10 +715,10 @@ Optional prefix argument LANG prompts to set language for this search."
                           word))
       ;; else normal search:
       (leo--translate lang-stored word)))
-  (message (concat "'t' to search again, prefix to choose
-  language, 'b' to view in browser"
+  (message (concat "'t': search again, prefix: set
+  language, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
-                     ", 'c' to search with dictcc.el"))))
+                     ", 'c': search with dictcc.el"))))
 
 ;;;###autoload
 (defun leo-translate-at-point (&optional lang)
@@ -742,9 +742,9 @@ Optional prefix argument LANG prompts to set language for this search."
                           (current-word)))
       ;; else normal search:
       (leo--translate leo-language (current-word))))
-  (message (concat "'t' to search again, prefix to choose language, 'b' to view in browser"
+  (message (concat "'t': search again, prefix: set language, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
-                     ", 'c' to search with dictcc.el"))))
+                     ", 'c': search with dictcc.el"))))
 
 
 (provide 'leo)
