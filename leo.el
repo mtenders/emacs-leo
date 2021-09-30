@@ -46,6 +46,8 @@
 
 ;;; Code:
 (require 'xml)
+(require 'dom)
+(require 'browse-url)
 
 (defgroup leo nil
   "Leo dictionary interface."
@@ -154,12 +156,12 @@ And, reversed, to prompt for language choice when `leo-translate-word'
 and `leo-translate-at-point' are called with a prefix arg.")
 
 (defvar leo--results-info nil
-  "Information about the current results from a leo search. Used
-  to store search term for `leo-browse-url-results', and language
-  searched for `leo-translate-word-return-search' or
-  `leo--translate-word-click-search' after `leo-translate-word'
-  is called with a prefix argument to set a non-default search
-  language.")
+  "Information about the current results from a leo search.
+Used to store search term for `leo-browse-url-results', and
+language searched for `leo-translate-word-return-search' or
+`leo--translate-word-click-search' after `leo-translate-word'
+is called with a prefix argument to set a non-default search
+language.")
 (make-variable-buffer-local 'leo--results-info)
 
 (defun leo--generate-url (lang word)
@@ -245,12 +247,6 @@ and `leo-translate-at-point' are called with a prefix arg.")
   "Remove trailing period from STRING if it has one."
   (if (string-match "\\.$" string)
       (substring string 0 -1)
-    string))
-
-(defun leo--strip-redundant-parens (string)
-  "Remove redundant ( ) from from STRING if it has them."
-  (if (string-match "^(" string)
-      (substring string 1 -1)
     string))
 
 (defun leo--extract-flextable-from-side (side)
@@ -750,8 +746,7 @@ Optional prefix argument LANG prompts to set language for this search."
                           word))
       ;; else normal search:
       (leo--translate lang-stored word)))
-  (message (concat "'t': search again, prefix: set
-  language, 'b': view in browser"
+  (message (concat "'t': search again, prefix: set language, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
 
