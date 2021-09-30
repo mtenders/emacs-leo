@@ -309,8 +309,9 @@ Each contains two sides, or results in a pair of languages."
                (cons 'table (leo--extract-flextable-from-side x))))
             sides)))
 
+;; PROPERTIZING
 (defun leo--add-props-to-match (match)
-  "Add text properties to string MATCH, including TERM."
+  "Add text properties to string MATCH."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'button t
                              'follow-link t
@@ -322,25 +323,25 @@ Each contains two sides, or results in a pair of languages."
                                          "Click to search leo for this term"))
                        match))
 
-(defun leo--propertize-past-participles (result)
-  "Set the properties of past participles in RESULT to `leo-auxiliary-face'."
-  (save-match-data
-    (when (string-match "|[ a-z,/]+,+[ a-z,/]+|" result)
-      ;; if we have past participles; regex tries to mandate a comma to
-      ;; differentiate this from DE adj. that also use "|"
-      (set-text-properties (match-beginning 0) (match-end 0)
-                           (list 'face 'leo-auxiliary-face)
-                           result))
-    result))
-
 (defun leo--add-term-prop-to-match (match term)
   "Add text property 'term TERM to string MATCH."
   (add-text-properties (match-beginning 0) (match-end 0)
                        (list 'term term)
                        match))
 
-(defun leo--add-ital-prop-to-case-and-variant-marker (match)
-  "Add text property ``leo-case-and-variant-marker-face' to string MATCH."
+(defun leo--propertize-past-participles-in-result (result)
+  "Set the properties of past participles in RESULT to `leo-auxiliary-face' only."
+  (save-match-data
+    (when (string-match "|[ a-z,/]+,+[ a-z,/]+|" result)
+      ;; regex tries to mandate a comma to
+      ;; differentiate this from DE adj. sets that also use "|"
+      (set-text-properties (match-beginning 0) (match-end 0)
+                           (list 'face 'leo-auxiliary-face)
+                           result))
+    result))
+
+(defun leo--case-and-variant-marker-face (match)
+  "Add text property `leo-case-and-variant-marker-face' to string MATCH."
   (set-text-properties (match-beginning 0) (match-end 0)
                        (list 'face 'leo-case-and-variant-marker-face)
                        match))
@@ -352,10 +353,10 @@ Each contains two sides, or results in a pair of languages."
     (save-match-data
       (mapc (lambda (x)
                 (if (string-match x result)
-                    (leo--add-ital-prop-to-case-and-variant-marker result))
+                    (leo--case-and-variant-marker-face result))
                 ;; match again starting from end of prev match
                 (if (string-match x result (match-end 0))
-                    (leo--add-ital-prop-to-case-and-variant-marker result)))
+                    (leo--case-and-variant-marker-face result)))
               v-marker)))
   result)
 
@@ -366,10 +367,10 @@ Each contains two sides, or results in a pair of languages."
     (save-match-data
       (mapc (lambda (x)
                 (if (string-match x result)
-                    (leo--add-ital-prop-to-case-and-variant-marker result))
+                    (leo--case-and-variant-marker-face result))
                 ;; match again starting from end of prev match
                 (if (string-match x result (match-end 0))
-                    (leo--add-ital-prop-to-case-and-variant-marker result)))
+                    (leo--case-and-variant-marker-face result)))
               c-marker)))
   result)
 
@@ -402,20 +403,29 @@ This is to handle the loss of our <br> tags in the XML."
         (setq leo-words-list (cdr leo-words-list))))
     result))
 
+(defun leo--cull-double-spaces (result)
+  "Remove any double spaces from RESULT."
+  (save-match-data
+    ;; match char + 2 spaces + char:
+      (while (string-match "[^[:blank:]][[:blank:]]\\{2\\}[^[:blank:]]" result)
+        (setq result (replace-match
+                      ;; concat car before double space
+                      (concat (substring (match-string 0 result) 0 1)
+                              " "
+                              ;; car after double space
+                              (substring (match-string 0 result) 3 nil))
+                          t nil result))))
+  result)
+
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in LEO-WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
-  (let ((has-variants-p (if (or (string-match "BE" result)
+  (let ((leo-last-match-end)
+        (has-variants-p (if (or (string-match "BE" result)
                                 (string-match "AE" result)
                                 (string-match "espAE" result)
                                 (string-match "espBE" result))
-                            t))
-        (has-cases-p (if (or (string-match "Nom." result)
-                             (string-match "Akk." result)
-                             (string-match "Dat." result)
-                             (string-match "Gen." result))
-                         t))
-        (leo-last-match-end))
+                            t)))
     (while leo-words-list
       (let* ((term (car leo-words-list))
              (term-spl (split-string term)))
@@ -435,35 +445,54 @@ List items in words-list are applied as both split lists and whole strings."
                 ;; this presumes any repetion comes after not before any variant
                 (setq leo-last-match-end (match-end 0)))
             ;; ELSE match each word in term separately:
-            (mapc (lambda (x)
-                      (if (string-match x result)
+            (let ((leo-last-match-end-split))
+              (mapc (lambda (x)
+                      (if (string-match x result leo-last-match-end-split)
                           (progn
                             (leo--add-props-to-match result)
-                            (leo--add-term-prop-to-match result x)))
+                            (leo--add-term-prop-to-match result x)
+                            (setq leo-last-match-end-split (match-end 0))))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
                           (if (string-match x result (match-end 0))
                               (progn
                                 (leo--add-props-to-match result)
                                 (leo--add-term-prop-to-match result x)))))
-                    term-spl))))
+                    term-spl)))))
       (setq leo-words-list (cdr leo-words-list)))
-    (when has-variants-p ; only run on variants
-        (leo--propertize-variant-markers-in-result result))
-    (when has-cases-p
-      (leo--propertize-case-markers-in-result result))
-    ;; handle any accidental propertizing of past participles:
-    (leo--propertize-past-participles result)
     result))
+
+(defun leo--propertize-result-string (result leo-words-list)
+  "Return a nicely formatted and propertized RESULT string for printing a side.
+LEO-WORDS-LIST is the list of words and phrases in <words>, which will be propertized in result."
+  (let ((has-variants-p (if (or (string-match "BE" result)
+                                (string-match "AE" result)
+                                (string-match "espAE" result)
+                                (string-match "espBE" result))
+                            t))
+        (has-cases-p (if (or (string-match "Nom." result)
+                             (string-match "Akk." result)
+                             (string-match "Dat." result)
+                             (string-match "Gen." result))
+                         t))
+        (result (leo--propertize-words-list-in-result
+                 (leo--cull-double-spaces
+                  (leo--space-before-term leo-words-list
+                                          (propertize result 'face 'leo-auxiliary-face)))
+                 leo-words-list)))
+      (when has-variants-p
+        (leo--propertize-variant-markers-in-result result))
+      (when has-cases-p
+        (leo--propertize-case-markers-in-result result))
+      ;; handle any accidental propertizing of past participles:
+       (leo--propertize-past-participles-in-result result)
+      result))
 
 ;;; PRINTING
 (defun leo--print-single-side (side)
   "Print a single SIDE of a result entry."
   (let* ((words-list (cdr (assoc 'words-list side)))
-         (result-no-prop (cdr (assoc 'result side)))
-         (result-prop (propertize result-no-prop
-                                  'face 'leo-auxiliary-face))
-         (result (leo--space-before-term words-list result-prop))
+         (result (cdr (assoc 'result side)))
          (table (cdr (assoc 'table side))))
     (insert
      (concat
@@ -484,7 +513,7 @@ List items in words-list are applied as both split lists and whole strings."
                                (car words-list) "'"))
            " "))
       (when result
-            (leo--propertize-words-list-in-result result words-list))))))
+        (leo--propertize-result-string result words-list))))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
