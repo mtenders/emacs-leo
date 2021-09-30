@@ -381,12 +381,18 @@ This is to handle the loss of our <br> tags in the XML."
     (save-match-data
       (while leo-words-list
         (let ((term (car leo-words-list)))
-          ;; if term preceded by neither space nor newline
-          (when (string-match (concat "[^[:blank:]\n]"
-                                      term)
-                              result)
+          ;; if square bracket followed by a alphanum,
+          ;; non-greedy one-or-more
+          ;; shd match one char if matching
+          (when (or (string-match "][[:alpha:]]+?" result)
+                    ;; or match AE/BE + term with not space
+                    (string-match (concat "[E]"
+                                          (substring-no-properties
+                                          ;; we don't care how it ends
+                                           term 0 2))
+                                  result))
             (setq result (replace-match
-                          ;; regex matches preceding car so we get it
+                          ;; regex matches preceding char so we get it
                           (concat (substring (match-string 0 result) 0 1)
                                   ;; then a space
                                   " "
