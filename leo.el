@@ -182,7 +182,7 @@ language.")
 	(xml-parse-region (point-min) (point-max))))
 
 (defun leo--map-get-children (seq child)
-  "Map xml-get-children over SEQ for CHILD."
+  "Map `xml-get-children' over SEQ for CHILD."
   (mapcan
    (lambda (node) (xml-get-children node child))
    seq))
@@ -595,7 +595,7 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (interactive "e")
   (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
                   leo-language))) ;fallback
-    (leo--translate lang (get-text-property (point) 'term ))))
+    (leo--translate lang (get-text-property (posn-point (event-end event)) 'term ))))
 
 (defun leo--translate-word-return-search ()
   "Translate word or phrase at point between `leo-language' and German.
@@ -722,10 +722,10 @@ SIMILAR is a list of suggestions to display if there are no results."
      similar-list)))
 
 ;;;###autoload
-(defun leo-translate-word (word &optional lang)
+(defun leo-translate-word (word &optional prefix)
   "Translate WORD between language set by 'leo-language' and German.
 Show translations in new buffer window.
-Optional prefix argument LANG prompts to set language for this search."
+Optional arg PREFIX prompts to set language for this search."
   (interactive "sTranslate: \nP")
   (let* ((language-candidates
           ;; transpose alist for comp read to display full lang name
@@ -735,7 +735,7 @@ Optional prefix argument LANG prompts to set language for this search."
          ;; get stored lang if we are already in a results page:
          (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
                           leo-language))) ;fallback
-    (if current-prefix-arg
+    (if prefix
         ;; if prefix: prompt for language to search for:
         (let ((lang-prefix (completing-read
                             (format "Language (to pair with German) (%s): "
@@ -751,17 +751,17 @@ Optional prefix argument LANG prompts to set language for this search."
                      ", 'c': search with dictcc.el"))))
 
 ;;;###autoload
-(defun leo-translate-at-point (&optional lang)
+(defun leo-translate-at-point (&optional prefix)
   "Translate word under cursor between `leo-language' and German.
 Show translations in new buffer window.
-Optional prefix argument LANG prompts to set language for this search."
+Optional arg PREFIX prompts to set language for this search."
   (interactive "P")
   (let* ((language-candidates
           ;; transpose alist so comp read displays full lang name
           (mapcar (lambda (x)
                     (cons (cdr x) (car x)))
                   leo-languages-full)))
-    (if current-prefix-arg
+    (if prefix
         ;; if prefix: prompt for language to search for:
         (let ((lang (completing-read
                      (format "Language (to pair with German) (%s): "
