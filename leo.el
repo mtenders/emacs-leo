@@ -358,7 +358,7 @@ Each contains two sides, or results in a pair of languages."
 
 (defun leo--propertize-case-markers-in-result (result)
   "Add property `leo-case-and-variant-marker-face' to case markers in RESULT."
-  (let ((c-marker '("Dat." "Nom." "Gen." "Akk."))
+  (let ((c-marker '("Dat\\." "Nom\\." "Gen\\." "Akk\\."))
         (case-fold-search nil)) ; case-sensitive matching
     (save-match-data
       (mapc (lambda (x)
@@ -377,16 +377,17 @@ This is to handle the loss of our <br> tags in the XML."
   (let ((result result))
     (save-match-data
       (while leo-words-list
-        (let ((term (car leo-words-list)))
+        (let ((term (car leo-words-list))
+              (case-fold-search nil)) ; to match upper case "E"
           ;; if square bracket followed by a alphanum,
           ;; non-greedy one-or-more
           ;; shd match one char if matching
           (when (or (string-match "][[:alpha:]]+?" result)
                     ;; or match AE/BE + term with not space
-                    (string-match (concat "[E]"
+                    (string-match (concat "E"
                                           (substring-no-properties
                                           ;; we don't care how it ends
-                                           term 0 2))
+                                           term 0 1)) ;2 breaks one-letter word search
                                   result))
             (setq result (replace-match
                           ;; regex matches preceding char so we get it
@@ -417,10 +418,12 @@ This is to handle the loss of our <br> tags in the XML."
   "Add properties to words in RESULT that match words in LEO-WORDS-LIST.
 List items in words-list are applied as both split lists and whole strings."
   (let ((leo-last-match-end)
-        (has-variants-p (if (or (string-match "BE" result)
-                                (string-match "AE" result)
-                                (string-match "espAE" result)
-                                (string-match "espBE" result))
+        ;; ensure we match entries that have both
+        ;; entries with only AE or BE don't need the doubling up
+        (has-variants-p (if (or (and (string-match "BE" result)
+                                     (string-match "AE" result))
+                                (and (string-match "espAE" result)
+                                     (string-match "espBE" result)))
                             t)))
     (while leo-words-list
       (let* ((term (car leo-words-list))
