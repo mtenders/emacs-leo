@@ -1,3 +1,33 @@
+;;; leo.el --- Indpection functions for for emacs-leo.el -*- lexical-binding:t -*-
+;;
+;; Copyright (C) 2021 Marty Hiatt <mousebot AT riseup.net>
+;;
+;; Author: Marty Hiatt <mousebot AT riseup.net>
+;; Created: Sept 2021
+;;
+;; Package-Requires: ((emacs "25.1"))
+;; Keywords: convenience, translate
+;; URL: https://git.blast.noho.st/mouse/emacs-leo
+;; Version: 0.2
+;; Prefix: leo
+;; Separator: -
+;;
+;;; License:
+;;
+;; This file is NOT part of GNU Emacs.
+;;
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 (defun leo--inspect-parsed-xml (word)
   "View the parsed xml returned by a query for WORD.
