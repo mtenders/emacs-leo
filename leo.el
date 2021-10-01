@@ -48,6 +48,8 @@
 (require 'xml)
 (require 'dom)
 (require 'browse-url)
+(when (require 'dictcc nil :noerror)
+  (declare-function dictcc "dictcc"))
 
 (defgroup leo nil
   "Leo dictionary interface."
@@ -190,29 +192,37 @@ language.")
    seq))
 
 (defun leo--get-result-lang-pair (xml-node)
+  "Get the language pair attribute of an XML-NODE."
   (xml-get-attribute xml-node 'lp))
 
 (defun leo--get-result-similar-list (xml-node)
+  "Get the parsed XML of the list of similar terms from an XML-NODE."
   (xml-get-children xml-node 'similar))
 
 (defun leo--get-result-section-list (xml-node)
+  "Get the parsed XML of the section-list node of an XML-NODE."
   (xml-get-children xml-node 'sectionlist))
 
 (defun leo--get-result-sections-as-list (section-list)
+  "Get the parsed XML of section nodes from a SECTION-LIST node."
   (xml-get-children (car section-list) 'section))
 
 (defun leo--get-section-part-of-speech (section)
+    "Get the part of speech of a SECTION."
   (xml-get-attribute section 'sctTitle))
 
 ;; a section also has attrs: number, short name, count
 
 (defun leo--get-entries-from-section (section)
+  "Get the parsed XML of the entries from a SECTION."
   (xml-get-children section 'entry))
 
 (defun leo--get-info-from-entry (entry)
+  "Get the parsed XML of the info node of an ENTRY."
   (xml-get-children entry 'info))
 
 (defun leo--get-entry-part-of-speech (entry)
+  "Get the part of speech of an ENTRY."
   (let ((cat (xml-get-children (car (leo--get-info-from-entry entry))
                                'category)))
     (xml-get-attribute
@@ -220,6 +230,7 @@ language.")
      'type)))
 
 (defun leo--get-sides-from-entry (entry)
+  "Get the parsed XML of the sides nodes from ENTRY."
   (xml-get-children entry 'side))
 
 (defun leo--get-lang-from-side (side)
@@ -227,19 +238,25 @@ language.")
   (xml-get-attribute side 'lang))
 
 (defun leo--get-words-node-from-side (side)
+  "Get the parsed XML of the <words> node in SIDE."
   (xml-get-children side 'words))
 
 (defun leo--get-repr-children-strings-as-string (side)
+  "Get the parsed XML of the childrend nodes of <repr> in SIDE."
   (dom-texts (dom-child-by-tag side 'repr) ""))
 
 (defun leo--strip-redundant-scores (string)
+  "Remove redundant underscores from STRING."
   (replace-regexp-in-string "[ ]+" "" string))
 
 (defun leo--get-repr-children-strings-as-string-trimmed (side)
+    "Get the parsed XML of the children nodes of <repr> in SIDE.
+Remove redundant underscores from the result."
   (leo--strip-redundant-scores
    (leo--get-repr-children-strings-as-string side)))
 
 (defun leo--extract-word-strings-as-list (words-node)
+  "Make a list containing each entry in WORDS-NODE."
    (let ((word-node-list (xml-get-children (car words-node) 'word)))
      (mapcar (lambda (x)
                (car (xml-node-children x)))
