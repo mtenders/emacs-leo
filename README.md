@@ -6,7 +6,7 @@ This package allows you to interact with [Leo.de](https://leo.de) dictionaries f
 
 It provides the commands `leo-translate-word` and `leo-translate-at-point`. They translate between German and the language set by the custom variable `leo-language`. The second language can also be specified interactively by invoking the commands with a prefix argument.
 
-Results are sorted by part of speech, and display all additional information about the term such as usage, case markers, linguistic variant, etc. They also include a direct link to conjugation or inflection tables.
+Results are sorted by part of speech, and display all additional information about the term such as usage, case markers, linguistic variant, etc. They also include a direct link to conjugation or inflection tables, shown as the icon `▦` (or `#`).
 
 In the results buffer:
 
