@@ -478,24 +478,27 @@ List items in words-list are applied as both split lists and whole strings."
       (setq leo-words-list (cdr leo-words-list)))
     result))
 
+(defun leo-has-markers-p (markers result)
+  "Test if string RESULT contains any items in list MARKERS."
+  (let ((marks-p)
+        (case-fold-search nil))
+    (dolist (marker markers)
+      (if (string-match-p marker result)
+          (setq marks-p t)))
+    marks-p))
+
 (defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT string for printing a side.
 LEO-WORDS-LIST is the list of words and phrases in <words>, which will be propertized in result."
-  (let ((has-variants-p (if (or (string-match "BE" result)
-                                (string-match "AE" result)
-                                (string-match "espAE" result)
-                                (string-match "espBE" result))
-                            t))
-        (has-cases-p (if (or (string-match "Nom." result)
-                             (string-match "Akk." result)
-                             (string-match "Dat." result)
-                             (string-match "Gen." result))
-                         t))
-        (result (leo--propertize-words-list-in-result
-                 (leo--cull-double-spaces
-                  (leo--space-before-term leo-words-list
-                                          (propertize result 'face 'leo-auxiliary-face)))
-                 leo-words-list)))
+  (let* ((cases '("Nom\\." "Akk\\." "Dat\\." "Gen\\."))
+         (vars '("BE" "AE" "espAE" "espBE"))
+         (has-cases-p (leo-has-markers-p cases result))
+         (has-variants-p (leo-has-markers-p vars result))
+         (result (leo--propertize-words-list-in-result
+                  (leo--cull-double-spaces
+                   (leo--space-before-term leo-words-list
+                                           (propertize result 'face 'leo-auxiliary-face)))
+                  leo-words-list)))
       (when has-variants-p
         (leo--propertize-variant-markers-in-result result))
       (when has-cases-p
