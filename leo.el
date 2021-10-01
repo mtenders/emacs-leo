@@ -130,16 +130,18 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
     ;; (let ((map (copy-keymap shr-map)))
-    (define-key map [mouse-2] 'leo--translate-word-click-search)
-    (define-key map (kbd "RET") 'leo--translate-word-return-search)
+    (define-key map [mouse-2] #'leo--translate-word-click-search)
+    (define-key map (kbd "RET") #'leo--translate-word-return-search)
     map))
 
 (defvar leo-inflexion-table-map
   (let ((map (make-sparse-keymap)))
     ;; (let ((map (copy-keymap shr-map)))
-    (define-key map [mouse-2] 'shr-browse-url)
-    (define-key map (kbd "RET") 'shr-browse-url)
+    (define-key map [mouse-2] #'shr-browse-url)
+    (define-key map (kbd "RET") #'shr-browse-url)
     map))
+
+(defvar shr-map)
 
 (defvar leo-languages-full
   '(("en" . "englisch")
@@ -704,10 +706,10 @@ SIMILAR is a list of suggestions to display if there are no results."
     (leo--propertize-search-term-in-results word)
     ;; hack to not ruin help-mode bindings, till we have a minor mode:
     (use-local-map (copy-keymap (current-local-map)))
-    (local-set-key (kbd "t") 'leo-translate-word)
-    (local-set-key (kbd "b") 'leo-browse-url-results)
+    (local-set-key (kbd "t") #'leo-translate-word)
+    (local-set-key (kbd "b") #'leo-browse-url-results)
     (when (require 'dictcc nil :noerror)
-      (local-set-key (kbd "c") 'leo--search-term-with-dictcc))
+      (local-set-key (kbd "c") #'leo--search-term-with-dictcc))
     (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1)))
