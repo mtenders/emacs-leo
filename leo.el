@@ -659,15 +659,17 @@ Results are links to searches for themselves."
 
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
-  (let ((inhibit-read-only t))
+  (let ((inhibit-read-only t)
+        (word-spl (split-string word)))
     (save-excursion
       (goto-char (point-min))
-      (while (search-forward-regexp word nil 'noerror)
-        ;; (let ((props (text-properties-at (- (point) 1))))
-          ;; (remove-text-properties (- (point) (length word)) (point)
-                                  ;; '(face face))
-          (add-text-properties (- (point) (length word)) (point)
-                               '(face leo-match-face))))))
+      (mapc (lambda (x)
+              (while (search-forward-regexp (concat "\\b" x "\\b")
+                                            nil 'noerror)
+                (add-text-properties (- (point) (length x)) (point)
+                                     '(face leo-match-face)))
+              (goto-char (point-min)))
+            word-spl))))
 
 (defun leo--print-results-buffer-heading (word)
   "Insert heading in buffer showing results for WORD."
