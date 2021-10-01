@@ -24,3 +24,7 @@ If no results are returned, a list of suggestions is displayed which are also cl
 Available languages: `en`, `es`, `fr`, `it`, `ch`, `pt`, `ru`, `pl`.
 
 The pairs tested while hacking on this are `en` < > `de`, plus a little `fr` < > `de`. Other languages may not work as well. The propertizing of entries isn't perfect, but it's good enough to rely on and is still being improved.
+
+It looks like this:
+
+![emacs-leo-screenshot](./emacs-leo-screenshot.png)
