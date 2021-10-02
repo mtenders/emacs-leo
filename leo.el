@@ -51,6 +51,10 @@
 (when (require 'dictcc nil :noerror)
   (declare-function dictcc "dictcc"))
 
+(declare-function shr-browse-url "shr")
+(defvar shr-map)
+
+
 (defgroup leo nil
   "Leo dictionary interface."
   :group 'leo)
@@ -151,8 +155,6 @@ The default is the current `url-user-agent' setting. It can be manually set, or 
     (define-key map [mouse-2] #'shr-browse-url)
     (define-key map (kbd "RET") #'shr-browse-url)
     map))
-
-(defvar shr-map)
 
 (defvar leo-languages-full
   '(("en" . "englisch")
