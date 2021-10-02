@@ -1,7 +1,5 @@
 # leo.el
 
-[//]: # ([![MELPA](https://melpa.org/packages/leo-badge.svg)](https://melpa.org/#/leo))
-
 This package allows you to interact with [Leo.de](https://leo.de) dictionaries from within emacs. It extends [emacs-leo](https://github.com/mtenders/emacs-leo).
 
 It provides the commands `leo-translate-word` and `leo-translate-at-point`. They translate between German and the language set by the custom variable `leo-language`. The second language can also be specified interactively by invoking the commands with a prefix argument.
