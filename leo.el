@@ -63,6 +63,15 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
 
+(defcustom leo-user-agent url-user-agent
+  "The user agent to send with requests to the Leo server.
+
+The default is the current `url-user-agent' setting. It can be manually set, or if set to default, can itself be customized using `url-privacy-level'. Other option is to use the Tor user agent."
+  :group 'leo
+  :type '(choice
+          (function-item :tag "Default" :value url-user-agent)
+          (function-item :tag "Tor" :value "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0")))
+
 (defcustom leo-browse-url-function nil
   "The browser that is used to access online dictionaries."
   :group 'leo
@@ -181,9 +190,10 @@ language.")
 
 (defun leo--parse-xml (url)
   "Parse xml file retrieved from URL."
-  (with-temp-buffer
-	(url-insert-file-contents url)
-	(xml-parse-region (point-min) (point-max))))
+  (let ((url-user-agent leo-user-agent))
+    (with-temp-buffer
+	  (url-insert-file-contents url)
+	  (xml-parse-region (point-min) (point-max)))))
 
 (defun leo--map-get-children (seq child)
   "Map `xml-get-children' over SEQ for CHILD."
