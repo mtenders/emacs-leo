@@ -564,7 +564,8 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
         (section-entries (cdar section)))
     (insert
      (propertize section-pos
-                 'face 'leo-heading-face)
+                 'face 'leo-heading-face
+                 'heading t)
      "\n\n")
     (mapcar (lambda (x)
               (leo--print-single-entry x))
@@ -647,6 +648,39 @@ Word or phrase at point is determined by button text property."
                (next-single-property-change (point) 'button))))
     (leo--translate lang text)))
 
+(defun leo-previous-heading ()
+  "Move point to previous POS or forum heading."
+  (interactive)
+  (save-match-data
+    (let ((match
+           (save-excursion
+             (text-property-search-backward 'heading ;NB 27.1!
+                                            t t t))))
+      (if match
+          (progn
+            (goto-char (prop-match-beginning match))
+            (recenter-top-bottom 3))
+        (message "No more headings.")))))
+
+(defun leo-next-heading ()
+  "Move point to next POS or forum heading."
+  (interactive)
+  (save-match-data
+    (let ((match
+           (save-excursion
+             (text-property-search-forward 'heading ;NB 27.1!
+                                           t t t))))
+      (if match
+          (progn
+            (goto-char (prop-match-beginning match))
+            (recenter-top-bottom 3))
+        (message "No more headings.")))))
+
+(defun leo-jump-to-forum-results ()
+    (interactive)
+  (goto-char (point-max))
+  (leo-previous-heading))
+
 (defun leo--did-you-mean (word similar)
   "Print some alternative terms SIMILAR to search for.
 Used if `leo--print-translation' for WORD has no results.
@@ -709,8 +743,10 @@ Results are links to searches for themselves."
   (with-current-buffer (get-buffer " *leo*")
     (insert
      (propertize
-      (concat "leo.de search results for " word ":\n\n")
-      'face 'leo-search-and-forum-face))))
+      (concat "leo.de search results for " word ":")
+      'face 'leo-search-and-forum-face
+      'heading t)
+     "\n\n")))
 
 (defun leo--print-results-buffer-forum-heading (word)
   "Insert forum results heading in buffer showing results for WORD."
@@ -718,7 +754,8 @@ Results are links to searches for themselves."
     (insert
      (propertize
       (concat "leo.de forum results for " word ":\n\n")
-      'face 'leo-search-and-forum-face))))
+      'face 'leo-search-and-forum-face
+      'heading t))))
 
 (defun leo--open-translation-buffer (results forums word lang similar)
   "Print translation RESULTS and FORUMS in temporary buffer.
@@ -739,6 +776,9 @@ SIMILAR is a list of suggestions to display if there are no results."
     (use-local-map (copy-keymap (current-local-map)))
     (local-set-key (kbd "t") #'leo-translate-word)
     (local-set-key (kbd "b") #'leo-browse-url-results)
+    (local-set-key (kbd ",") #'leo-previous-heading)
+    (local-set-key (kbd ".") #'leo-next-heading)
+    (local-set-key (kbd "f") #'leo-jump-to-forum-results)
     (when (require 'dictcc nil :noerror)
       (local-set-key (kbd "c") #'leo--search-term-with-dictcc))
     (setq leo--results-info `(term ,word lang ,lang)))
@@ -784,7 +824,7 @@ Optional arg PREFIX prompts to set language for this search."
                           word))
       ;; else normal search:
       (leo--translate lang-stored word)))
-  (message (concat "'t': search again, prefix: set language, 'b': view in browser"
+  (message (concat "'t': search again, prefix: set language, , '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
 
