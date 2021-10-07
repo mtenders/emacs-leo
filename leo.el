@@ -7,7 +7,7 @@
 ;;         Marty Hiatt <mousebot AT riseup.net>
 ;; Created: 21 Oct 2020
 ;;
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: convenience, translate
 ;; URL: https://git.blast.noho.st/mouse/emacs-leo
 ;; Version: 0.2
@@ -67,7 +67,7 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
 
-(defcustom leo-user-agent url-user-agent
+(defcustom leo-user-agent 'url-user-agent
   "The user agent to send with requests to the Leo server.
 
 The default is the current `url-user-agent' setting. It can be manually set, or if set to default, can itself be customized using `url-privacy-level'. Other option is to use the Tor user agent."
@@ -141,6 +141,20 @@ The default is the current `url-user-agent' setting. It can be manually set, or 
   '((t :inherit font-lock-comment-face :slant italic :height 0.8))
   "Face used to fade and italicise language case markers and variant markers in results."
   :group 'leo)
+
+(defvar leo-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "TAB") #'forward-button)
+    (define-key map (kbd "<backtab>") #'backward-button)
+    (define-key map (kbd "t") #'leo-translate-word)
+    (define-key map (kbd "b") #'leo-browse-url-results)
+    (define-key map (kbd ",") #'leo-previous-heading)
+    (define-key map (kbd ".") #'leo-next-heading)
+    (define-key map (kbd "f") #'leo-jump-to-forum-results)
+    (when (require 'dictcc nil :noerror)
+      (define-key map (kbd "c") #'leo--search-term-with-dictcc))
+    map)
+  "Keymap for leo mode.")
 
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
@@ -677,6 +691,7 @@ Word or phrase at point is determined by button text property."
         (message "No more headings.")))))
 
 (defun leo-jump-to-forum-results ()
+  "Jump to forum results."
     (interactive)
   (goto-char (point-max))
   (leo-previous-heading))
@@ -768,19 +783,11 @@ SIMILAR is a list of suggestions to display if there are no results."
     (leo--print-results-buffer-forum-heading word)
     (leo--print-forums forums))
   ;; make rly sure we are in correct buffer
-  ;; before we set do any keymapping
+  ;; before we set do anything further
   (with-current-buffer (get-buffer " *leo*")
     (leo--make-buttons)
     (leo--propertize-search-term-in-results word)
-    ;; hack to not ruin help-mode bindings, till we have a minor mode:
-    (use-local-map (copy-keymap (current-local-map)))
-    (local-set-key (kbd "t") #'leo-translate-word)
-    (local-set-key (kbd "b") #'leo-browse-url-results)
-    (local-set-key (kbd ",") #'leo-previous-heading)
-    (local-set-key (kbd ".") #'leo-next-heading)
-    (local-set-key (kbd "f") #'leo-jump-to-forum-results)
-    (when (require 'dictcc nil :noerror)
-      (local-set-key (kbd "c") #'leo--search-term-with-dictcc))
+    (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1)))
@@ -853,6 +860,10 @@ Optional arg PREFIX prompts to set language for this search."
   (message (concat "'t': search again, prefix: set language, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
+
+(define-derived-mode leo-mode special-mode "leo"
+  :group 'leo
+  (read-only-mode 1))
 
 
 (provide 'leo)
