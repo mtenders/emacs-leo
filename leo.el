@@ -163,6 +163,13 @@ The default is the current `url-user-agent' setting. It can be manually set, or 
     (define-key map (kbd "RET") #'leo--translate-word-return-search)
     map))
 
+(defvar leo-result-heading-search-more-pos-map
+  (let ((map (make-sparse-keymap)))
+    ;; (let ((map (copy-keymap shr-map)))
+    (define-key map [mouse-2] #'leo--translate-word-click-search-more-pos)
+    (define-key map (kbd "RET") #'leo--translate-word-return-search-more-pos)
+    map))
+
 (defvar leo-inflexion-table-map
   (let ((map (make-sparse-keymap)))
     ;; (let ((map (copy-keymap shr-map)))
@@ -194,7 +201,8 @@ language.")
 (make-variable-buffer-local 'leo--results-info)
 
 (defun leo--generate-url (lang word)
-  "Generate link to query for translations of WORD from LANG to German."
+  "Generate link to query for translations of WORD from LANG to German.
+Will return 16 results per POS."
   (concat
    "https://dict.leo.org/dictQuery/m-vocab/"
    lang
@@ -202,7 +210,23 @@ language.")
    lang
    "de&lang=de&rmWords=off&rmSearch=on&search="
    word
-   "&searchLoc=0&resultOrder=basic&multiwordShowSingle=on"))
+   "&searchLoc=0&order=basic&partial=show&multiwordShowSingle=on"))
+
+(defun leo--generate-url-single-pos (lang word pos)
+  "Generate link to query for translations of WORD between LANG and German.
+Will return 30 results for the given POS."
+  (let* ((pos-list '(("Substantive" . "1") ("Verben" . "2") ("Adjektive/Adverbien" . "3") ("Präpositionen/Pronomen" . "4")))
+         (pos-as-num (cdr (assoc pos pos-list))))
+  (concat
+   "https://dict.leo.org/dictQuery/m-vocab/"
+   lang
+   "de/query.xml?tolerMode=nof&lp="
+   lang
+   "de&lang=de&rmWords=off&rmSearch=on&search="
+   word
+   "&searchLoc=0&side=both&order=basic&partial=show&fixedSect="
+   pos-as-num
+   "&sectLenMax=30")))
 
 (defun leo--parse-xml (url)
   "Parse xml file retrieved from URL."
@@ -578,8 +602,13 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
         (section-entries (cdar section)))
     (insert
      (propertize section-pos
+                 'button t
+                 'follow-link t
+                 'heading t
                  'face 'leo-heading-face
-                 'heading t)
+                 'mouse-face 'highlight
+                 'keymap leo-result-heading-search-more-pos-map
+                 'help-echo (concat "View more results for this part of speech"))
      "\n\n")
     (mapcar (lambda (x)
               (leo--print-single-entry x))
@@ -661,6 +690,27 @@ Word or phrase at point is determined by button text property."
                  (previous-single-property-change (point) 'button)) ; get range start
                (next-single-property-change (point) 'button))))
     (leo--translate lang text)))
+
+(defun leo--translate-word-click-search-more-pos (event)
+  "Translate word on mouse click EVENT between `leo-language' and German."
+  (interactive "e")
+  (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                  leo-language)) ;fallback
+        (text (plist-get leo--results-info 'term)))
+    (leo--translate-more-pos lang
+                             text
+                             (thing-at-point 'sentence t)))) ; POS heading itself
+
+(defun leo--translate-word-return-search-more-pos ()
+  "Translate word or phrase at point between `leo-language' and German.
+Word or phrase at point is determined by button text property."
+  (interactive)
+  (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                  leo-language)) ;fallback
+        (text (plist-get leo--results-info 'term)))
+    (leo--translate-more-pos lang
+                         text
+                         (thing-at-point 'sentence t)))) ; POS heading itself
 
 (defun leo-previous-heading ()
   "Move point to previous POS or forum heading."
@@ -806,9 +856,24 @@ SIMILAR is a list of suggestions to display if there are no results."
      lang
      similar-list)))
 
+(defun leo--translate-more-pos (lang word pos)
+  "Translate WORD between LANG and German.
+Return 30 results for a single POS, rather than 16 for every POS."
+  (let* ((xml (leo--parse-xml
+              (leo--generate-url-single-pos lang word pos)))
+         (section-list (car (leo--get-result-section-list (car xml))))
+         ;; similar terms to offer if no results:
+         (similar-list (car (leo--get-result-similar-list (car xml)))))
+    (leo--open-translation-buffer
+     (leo--build-sections-list section-list)
+     (leo--extract-forum-subject-link-pairs xml)
+     word
+     lang
+     similar-list)))
+
 ;;;###autoload
 (defun leo-translate-word (word &optional prefix)
-  "Translate WORD between language set by 'leo-language' and German.
+  "Translate WORD between language set by `leo-language' and German.
 Show translations in new buffer window.
 Optional arg PREFIX prompts to set language for this search."
   (interactive "sTranslate: \nP")
