@@ -54,6 +54,7 @@
 (declare-function shr-browse-url "shr")
 (defvar shr-map)
 
+(defvar url-user-agent)
 
 (defgroup leo nil
   "Leo dictionary interface."
@@ -67,7 +68,7 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
 
-(defcustom leo-user-agent 'url-user-agent
+(defcustom leo-user-agent url-user-agent
   "The user agent to send with requests to the Leo server.
 
 The default is the current `url-user-agent' setting. It can be manually set, or if set to default, can itself be customized using `url-privacy-level'. Other option is to use the Tor user agent."
