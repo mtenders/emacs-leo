@@ -232,9 +232,16 @@ Will return 30 results for the given POS."
 (defun leo--parse-xml (url)
   "Parse xml file retrieved from URL."
   (let ((url-user-agent leo-user-agent))
-    (with-temp-buffer
-	  (url-insert-file-contents url)
-	  (xml-parse-region (point-min) (point-max)))))
+    (if (url-is-cached url)
+        (with-current-buffer (url-fetch-from-cache url)
+          (set-buffer-multibyte nil)
+          (let ((start (goto-char (re-search-forward "\n\n"))))
+            (zlib-decompress-region start (point-max))
+            (set-buffer-multibyte t)
+            (xml-parse-region start (point-max))))
+      (with-temp-buffer
+	    (url-insert-file-contents url)
+	    (xml-parse-region (point-min) (point-max))))))
 
 (defun leo--map-get-children (seq child)
   "Map `xml-get-children' over SEQ for CHILD."
