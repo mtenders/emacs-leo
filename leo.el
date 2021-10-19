@@ -415,9 +415,11 @@ Each contains two sides, or results in a pair of languages."
     result))
 
 (defun leo--case-and-variant-marker-face (match)
-  "Add text property `leo-case-and-variant-marker-face' to string MATCH."
+  "Add text property `leo-case-and-variant-marker-face' to string MATCH.
+Also makes case and variant markers superscript."
   (set-text-properties (match-beginning 0) (match-end 0)
-                       (list 'face 'leo-case-and-variant-marker-face)
+                       (list 'face 'leo-case-and-variant-marker-face
+                             'display '(raise 0.5))
                        match))
 
 (defun leo--propertize-variant-markers-in-result (result)
