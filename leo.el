@@ -851,7 +851,7 @@ SIMILAR is a list of suggestions to display if there are no results."
     (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1))
-  (message (concat "'t': search again, prefix: set language, , '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser"
+  (message (concat "'t': search again, prefix: set language, '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
 
