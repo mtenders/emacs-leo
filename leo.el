@@ -850,7 +850,10 @@ SIMILAR is a list of suggestions to display if there are no results."
     (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
-      (other-window 1)))
+      (other-window 1))
+  (message (concat "'t': search again, prefix: set language, , '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser"
+                   (when (require 'dictcc nil :noerror)
+                     ", 'c': search with dictcc.el"))))
 
 (defun leo--translate (lang word)
   "Translate WORD between LANG and German."
@@ -905,10 +908,7 @@ Optional arg PREFIX prompts to set language for this search."
           (leo--translate (cdr (assoc lang-prefix language-candidates))
                           word))
       ;; else normal search:
-      (leo--translate lang-stored word)))
-  (message (concat "'t': search again, prefix: set language, , '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser"
-                   (when (require 'dictcc nil :noerror)
-                     ", 'c': search with dictcc.el"))))
+      (leo--translate lang-stored word))))
 
 ;;;###autoload
 (defun leo-translate-at-point (&optional prefix)
@@ -931,10 +931,7 @@ Optional arg PREFIX prompts to set language for this search."
           (leo--translate (cdr (assoc lang language-candidates))
                           (current-word)))
       ;; else normal search:
-      (leo--translate leo-language (current-word))))
-  (message (concat "'t': search again, prefix: set language, 'b': view in browser"
-                   (when (require 'dictcc nil :noerror)
-                     ", 'c': search with dictcc.el"))))
+      (leo--translate leo-language (current-word)))))
 
 (define-derived-mode leo-mode special-mode "leo"
   :group 'leo
