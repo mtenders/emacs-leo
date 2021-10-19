@@ -10,12 +10,15 @@ In the results buffer:
 
 - click on a word to search for it
 - `<tab>` to a word or phrase then hit `<return>` to search for it
-- hit `t` to search again
+- `t` to search again
 - `C-u t` to search again and choose your language
+- `,` and `.` to go to the previous/next part of speech heading.
+- `f` to jump to forum results
+- click on a part of speech heading to view more results of only that type.
 - `b` to view results in external browser
 - and `c` to search the same term with [dictcc.el](https://github.com/martenlienen/dictcc.el) if it's installed.
 
-Links to forum results are also displayed. It is better to view these externally, which you can do using a prefix argument. 
+Links to forum results are also displayed. It is better to view these externally, which you can do by `C-u RET` with point on an entry. 
 
 If no results are returned, a list of suggestions is displayed which are also click (or tab/return) to search.
 
