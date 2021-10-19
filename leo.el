@@ -7,7 +7,7 @@
 ;;         Marty Hiatt <mousebot AT riseup.net>
 ;; Created: 21 Oct 2020
 ;;
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: convenience, translate
 ;; URL: https://git.blast.noho.st/mouse/emacs-leo
 ;; Version: 0.2
@@ -48,6 +48,13 @@
 (require 'xml)
 (require 'dom)
 (require 'browse-url)
+(when (require 'dictcc nil :noerror)
+  (declare-function dictcc "dictcc"))
+
+(declare-function shr-browse-url "shr")
+(defvar shr-map)
+
+(defvar url-user-agent)
 
 (defgroup leo nil
   "Leo dictionary interface."
@@ -60,6 +67,15 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   :type 'string
   :group 'leo
   :options '("es" "fr" "it" "ch" "pt" "ru" "pl"))
+
+(defcustom leo-user-agent url-user-agent
+  "The user agent to send with requests to the Leo server.
+
+The default is the current `url-user-agent' setting. It can be manually set, or if set to default, can itself be customized using `url-privacy-level'. Other option is to use the Tor user agent."
+  :group 'leo
+  :type '(choice
+          (function-item :tag "Default" :value url-user-agent)
+          (function-item :tag "Tor" :value "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0")))
 
 (defcustom leo-browse-url-function nil
   "The browser that is used to access online dictionaries."
@@ -127,18 +143,39 @@ Available languages: en, es, fr, it, ch, pt, ru, pl"
   "Face used to fade and italicise language case markers and variant markers in results."
   :group 'leo)
 
+(defvar leo-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "TAB") #'forward-button)
+    (define-key map (kbd "<backtab>") #'backward-button)
+    (define-key map (kbd "t") #'leo-translate-word)
+    (define-key map (kbd "b") #'leo-browse-url-results)
+    (define-key map (kbd ",") #'leo-previous-heading)
+    (define-key map (kbd ".") #'leo-next-heading)
+    (define-key map (kbd "f") #'leo-jump-to-forum-results)
+    (when (require 'dictcc nil :noerror)
+      (define-key map (kbd "c") #'leo--search-term-with-dictcc))
+    map)
+  "Keymap for leo mode.")
+
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
     ;; (let ((map (copy-keymap shr-map)))
-    (define-key map [mouse-2] 'leo--translate-word-click-search)
-    (define-key map (kbd "RET") 'leo--translate-word-return-search)
+    (define-key map [mouse-2] #'leo--translate-word-click-search)
+    (define-key map (kbd "RET") #'leo--translate-word-return-search)
+    map))
+
+(defvar leo-result-heading-search-more-pos-map
+  (let ((map (make-sparse-keymap)))
+    ;; (let ((map (copy-keymap shr-map)))
+    (define-key map [mouse-2] #'leo--translate-word-click-search-more-pos)
+    (define-key map (kbd "RET") #'leo--translate-word-return-search-more-pos)
     map))
 
 (defvar leo-inflexion-table-map
   (let ((map (make-sparse-keymap)))
     ;; (let ((map (copy-keymap shr-map)))
-    (define-key map [mouse-2] 'shr-browse-url)
-    (define-key map (kbd "RET") 'shr-browse-url)
+    (define-key map [mouse-2] #'shr-browse-url)
+    (define-key map (kbd "RET") #'shr-browse-url)
     map))
 
 (defvar leo-languages-full
@@ -165,7 +202,8 @@ language.")
 (make-variable-buffer-local 'leo--results-info)
 
 (defun leo--generate-url (lang word)
-  "Generate link to query for translations of WORD from LANG to German."
+  "Generate link to query for translations of WORD from LANG to German.
+Will return 16 results per POS."
   (concat
    "https://dict.leo.org/dictQuery/m-vocab/"
    lang
@@ -173,13 +211,37 @@ language.")
    lang
    "de&lang=de&rmWords=off&rmSearch=on&search="
    word
-   "&searchLoc=0&resultOrder=basic&multiwordShowSingle=on"))
+   "&searchLoc=0&order=basic&partial=show&multiwordShowSingle=on"))
+
+(defun leo--generate-url-single-pos (lang word pos)
+  "Generate link to query for translations of WORD between LANG and German.
+Will return 30 results for the given POS."
+  (let* ((pos-list '(("Substantive" . "1") ("Verben" . "2") ("Adjektive/Adverbien" . "3") ("Präpositionen/Pronomen" . "4")))
+         (pos-as-num (cdr (assoc pos pos-list))))
+  (concat
+   "https://dict.leo.org/dictQuery/m-vocab/"
+   lang
+   "de/query.xml?tolerMode=nof&lp="
+   lang
+   "de&lang=de&rmWords=off&rmSearch=on&search="
+   word
+   "&searchLoc=0&side=both&order=basic&partial=show&fixedSect="
+   pos-as-num
+   "&sectLenMax=30")))
 
 (defun leo--parse-xml (url)
   "Parse xml file retrieved from URL."
-  (with-temp-buffer
-	(url-insert-file-contents url)
-	(xml-parse-region (point-min) (point-max))))
+  (let ((url-user-agent leo-user-agent))
+    (if (url-is-cached url)
+        (with-current-buffer (url-fetch-from-cache url)
+          (set-buffer-multibyte nil)
+          (let ((start (goto-char (re-search-forward "\n\n"))))
+            (zlib-decompress-region start (point-max))
+            (set-buffer-multibyte t)
+            (xml-parse-region start (point-max))))
+      (with-temp-buffer
+	    (url-insert-file-contents url)
+	    (xml-parse-region (point-min) (point-max))))))
 
 (defun leo--map-get-children (seq child)
   "Map `xml-get-children' over SEQ for CHILD."
@@ -188,29 +250,37 @@ language.")
    seq))
 
 (defun leo--get-result-lang-pair (xml-node)
+  "Get the language pair attribute of an XML-NODE."
   (xml-get-attribute xml-node 'lp))
 
 (defun leo--get-result-similar-list (xml-node)
+  "Get the parsed XML of the list of similar terms from an XML-NODE."
   (xml-get-children xml-node 'similar))
 
 (defun leo--get-result-section-list (xml-node)
+  "Get the parsed XML of the section-list node of an XML-NODE."
   (xml-get-children xml-node 'sectionlist))
 
 (defun leo--get-result-sections-as-list (section-list)
+  "Get the parsed XML of section nodes from a SECTION-LIST node."
   (xml-get-children (car section-list) 'section))
 
 (defun leo--get-section-part-of-speech (section)
+    "Get the part of speech of a SECTION."
   (xml-get-attribute section 'sctTitle))
 
 ;; a section also has attrs: number, short name, count
 
 (defun leo--get-entries-from-section (section)
+  "Get the parsed XML of the entries from a SECTION."
   (xml-get-children section 'entry))
 
 (defun leo--get-info-from-entry (entry)
+  "Get the parsed XML of the info node of an ENTRY."
   (xml-get-children entry 'info))
 
 (defun leo--get-entry-part-of-speech (entry)
+  "Get the part of speech of an ENTRY."
   (let ((cat (xml-get-children (car (leo--get-info-from-entry entry))
                                'category)))
     (xml-get-attribute
@@ -218,6 +288,7 @@ language.")
      'type)))
 
 (defun leo--get-sides-from-entry (entry)
+  "Get the parsed XML of the sides nodes from ENTRY."
   (xml-get-children entry 'side))
 
 (defun leo--get-lang-from-side (side)
@@ -225,19 +296,25 @@ language.")
   (xml-get-attribute side 'lang))
 
 (defun leo--get-words-node-from-side (side)
+  "Get the parsed XML of the <words> node in SIDE."
   (xml-get-children side 'words))
 
 (defun leo--get-repr-children-strings-as-string (side)
+  "Get the parsed XML of the childrend nodes of <repr> in SIDE."
   (dom-texts (dom-child-by-tag side 'repr) ""))
 
 (defun leo--strip-redundant-scores (string)
+  "Remove redundant underscores from STRING."
   (replace-regexp-in-string "[ ]+" "" string))
 
 (defun leo--get-repr-children-strings-as-string-trimmed (side)
+    "Get the parsed XML of the children nodes of <repr> in SIDE.
+Remove redundant underscores from the result."
   (leo--strip-redundant-scores
    (leo--get-repr-children-strings-as-string side)))
 
 (defun leo--extract-word-strings-as-list (words-node)
+  "Make a list containing each entry in WORDS-NODE."
    (let ((word-node-list (xml-get-children (car words-node) 'word)))
      (mapcar (lambda (x)
                (car (xml-node-children x)))
@@ -302,7 +379,8 @@ Each contains two sides, or results in a pair of languages."
                (cons 'words-list (leo--extract-word-strings-as-list
                             (leo--get-words-node-from-side x)))
                (cons 'result (leo--get-repr-children-strings-as-string-trimmed x))
-               (cons 'table (leo--extract-flextable-from-side x))))
+               (cons 'table (leo--extract-flextable-from-side x))
+               (cons 'lang (leo--get-lang-from-side x))))
             sides)))
 
 ;; PROPERTIZING
@@ -337,9 +415,11 @@ Each contains two sides, or results in a pair of languages."
     result))
 
 (defun leo--case-and-variant-marker-face (match)
-  "Add text property `leo-case-and-variant-marker-face' to string MATCH."
+  "Add text property `leo-case-and-variant-marker-face' to string MATCH.
+Also makes case and variant markers superscript."
   (set-text-properties (match-beginning 0) (match-end 0)
-                       (list 'face 'leo-case-and-variant-marker-face)
+                       (list 'face 'leo-case-and-variant-marker-face
+                             'display '(raise 0.5))
                        match))
 
 (defun leo--propertize-variant-markers-in-result (result)
@@ -446,39 +526,40 @@ List items in words-list are applied as both split lists and whole strings."
             ;; ELSE match each word in term separately:
             (let ((leo-last-match-end-split))
               (mapc (lambda (x)
-                      (if (string-match x result leo-last-match-end-split)
-                          (progn
+                      (when (string-match x result leo-last-match-end-split)
                             (leo--add-props-to-match result)
                             (leo--add-term-prop-to-match result x)
-                            (setq leo-last-match-end-split (match-end 0))))
+                            (setq leo-last-match-end-split (match-end 0)))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
-                          (if (string-match x result (match-end 0))
-                              (progn
+                          (when (string-match x result (match-end 0))
                                 (leo--add-props-to-match result)
-                                (leo--add-term-prop-to-match result x)))))
+                                (leo--add-term-prop-to-match result x))))
                     term-spl)))))
       (setq leo-words-list (cdr leo-words-list)))
     result))
 
+(defun leo-has-markers-p (markers result)
+  "Test if string RESULT contains any items in list MARKERS."
+  (let ((marks-p)
+        (case-fold-search nil))
+    (dolist (marker markers)
+      (if (string-match-p marker result)
+          (setq marks-p t)))
+    marks-p))
+
 (defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT string for printing a side.
 LEO-WORDS-LIST is the list of words and phrases in <words>, which will be propertized in result."
-  (let ((has-variants-p (if (or (string-match "BE" result)
-                                (string-match "AE" result)
-                                (string-match "espAE" result)
-                                (string-match "espBE" result))
-                            t))
-        (has-cases-p (if (or (string-match "Nom." result)
-                             (string-match "Akk." result)
-                             (string-match "Dat." result)
-                             (string-match "Gen." result))
-                         t))
-        (result (leo--propertize-words-list-in-result
-                 (leo--cull-double-spaces
-                  (leo--space-before-term leo-words-list
-                                          (propertize result 'face 'leo-auxiliary-face)))
-                 leo-words-list)))
+  (let* ((cases '("Nom\\." "Akk\\." "Dat\\." "Gen\\."))
+         (vars '("BE" "AE" "espAE" "espBE"))
+         (has-cases-p (leo-has-markers-p cases result))
+         (has-variants-p (leo-has-markers-p vars result))
+         (result (leo--propertize-words-list-in-result
+                  (leo--cull-double-spaces
+                   (leo--space-before-term leo-words-list
+                                           (propertize result 'face 'leo-auxiliary-face)))
+                  leo-words-list)))
       (when has-variants-p
         (leo--propertize-variant-markers-in-result result))
       (when has-cases-p
@@ -531,7 +612,13 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
         (section-entries (cdar section)))
     (insert
      (propertize section-pos
-                 'face 'leo-heading-face)
+                 'button t
+                 'follow-link t
+                 'heading t
+                 'face 'leo-heading-face
+                 'mouse-face 'highlight
+                 'keymap leo-result-heading-search-more-pos-map
+                 'help-echo (concat "View more results for this part of speech"))
      "\n\n")
     (mapcar (lambda (x)
               (leo--print-single-entry x))
@@ -614,6 +701,61 @@ Word or phrase at point is determined by button text property."
                (next-single-property-change (point) 'button))))
     (leo--translate lang text)))
 
+(defun leo--translate-word-click-search-more-pos (event)
+  "Translate word on mouse click EVENT between `leo-language' and German."
+  (interactive "e")
+  (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                  leo-language)) ;fallback
+        (text (plist-get leo--results-info 'term)))
+    (leo--translate-more-pos lang
+                             text
+                             (thing-at-point 'sentence t)))) ; POS heading itself
+
+(defun leo--translate-word-return-search-more-pos ()
+  "Translate word or phrase at point between `leo-language' and German.
+Word or phrase at point is determined by button text property."
+  (interactive)
+  (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                  leo-language)) ;fallback
+        (text (plist-get leo--results-info 'term)))
+    (leo--translate-more-pos lang
+                         text
+                         (thing-at-point 'sentence t)))) ; POS heading itself
+
+(defun leo-previous-heading ()
+  "Move point to previous POS or forum heading."
+  (interactive)
+  (save-match-data
+    (let ((match
+           (save-excursion
+             (text-property-search-backward 'heading ;NB 27.1!
+                                            t t t))))
+      (if match
+          (progn
+            (goto-char (prop-match-beginning match))
+            (recenter-top-bottom 3))
+        (message "No more headings.")))))
+
+(defun leo-next-heading ()
+  "Move point to next POS or forum heading."
+  (interactive)
+  (save-match-data
+    (let ((match
+           (save-excursion
+             (text-property-search-forward 'heading ;NB 27.1!
+                                           t t t))))
+      (if match
+          (progn
+            (goto-char (prop-match-beginning match))
+            (recenter-top-bottom 3))
+        (message "No more headings.")))))
+
+(defun leo-jump-to-forum-results ()
+  "Jump to forum results."
+    (interactive)
+  (goto-char (point-max))
+  (leo-previous-heading))
+
 (defun leo--did-you-mean (word similar)
   "Print some alternative terms SIMILAR to search for.
 Used if `leo--print-translation' for WORD has no results.
@@ -676,8 +818,10 @@ Results are links to searches for themselves."
   (with-current-buffer (get-buffer " *leo*")
     (insert
      (propertize
-      (concat "leo.de search results for " word ":\n\n")
-      'face 'leo-search-and-forum-face))))
+      (concat "leo.de search results for " word ":")
+      'face 'leo-search-and-forum-face
+      'heading t)
+     "\n\n")))
 
 (defun leo--print-results-buffer-forum-heading (word)
   "Insert forum results heading in buffer showing results for WORD."
@@ -685,7 +829,8 @@ Results are links to searches for themselves."
     (insert
      (propertize
       (concat "leo.de forum results for " word ":\n\n")
-      'face 'leo-search-and-forum-face))))
+      'face 'leo-search-and-forum-face
+      'heading t))))
 
 (defun leo--open-translation-buffer (results forums word lang similar)
   "Print translation RESULTS and FORUMS in temporary buffer.
@@ -698,16 +843,11 @@ SIMILAR is a list of suggestions to display if there are no results."
     (leo--print-results-buffer-forum-heading word)
     (leo--print-forums forums))
   ;; make rly sure we are in correct buffer
-  ;; before we set do any keymapping
+  ;; before we set do anything further
   (with-current-buffer (get-buffer " *leo*")
     (leo--make-buttons)
     (leo--propertize-search-term-in-results word)
-    ;; hack to not ruin help-mode bindings, till we have a minor mode:
-    (use-local-map (copy-keymap (current-local-map)))
-    (local-set-key (kbd "t") 'leo-translate-word)
-    (local-set-key (kbd "b") 'leo-browse-url-results)
-    (when (require 'dictcc nil :noerror)
-      (local-set-key (kbd "c") 'leo--search-term-with-dictcc))
+    (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1)))
@@ -726,9 +866,24 @@ SIMILAR is a list of suggestions to display if there are no results."
      lang
      similar-list)))
 
+(defun leo--translate-more-pos (lang word pos)
+  "Translate WORD between LANG and German.
+Return 30 results for a single POS, rather than 16 for every POS."
+  (let* ((xml (leo--parse-xml
+              (leo--generate-url-single-pos lang word pos)))
+         (section-list (car (leo--get-result-section-list (car xml))))
+         ;; similar terms to offer if no results:
+         (similar-list (car (leo--get-result-similar-list (car xml)))))
+    (leo--open-translation-buffer
+     (leo--build-sections-list section-list)
+     (leo--extract-forum-subject-link-pairs xml)
+     word
+     lang
+     similar-list)))
+
 ;;;###autoload
 (defun leo-translate-word (word &optional prefix)
-  "Translate WORD between language set by 'leo-language' and German.
+  "Translate WORD between language set by `leo-language' and German.
 Show translations in new buffer window.
 Optional arg PREFIX prompts to set language for this search."
   (interactive "sTranslate: \nP")
@@ -751,7 +906,7 @@ Optional arg PREFIX prompts to set language for this search."
                           word))
       ;; else normal search:
       (leo--translate lang-stored word)))
-  (message (concat "'t': search again, prefix: set language, 'b': view in browser"
+  (message (concat "'t': search again, prefix: set language, , '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
 
@@ -780,6 +935,10 @@ Optional arg PREFIX prompts to set language for this search."
   (message (concat "'t': search again, prefix: set language, 'b': view in browser"
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
+
+(define-derived-mode leo-mode special-mode "leo"
+  :group 'leo
+  (read-only-mode 1))
 
 
 (provide 'leo)
