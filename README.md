@@ -22,6 +22,8 @@ Links to forum results are also displayed. It is better to view these externally
 
 If no results are returned, a list of suggestions is displayed which are also click (or tab/return) to search.
 
+For the moment there is no functionality to return to previous result. The easiest way to do this is `t` for a new search, then `M-p` to scroll back through search history.
+
 Available languages: `en`, `es`, `fr`, `it`, `ch`, `pt`, `ru`, `pl`.
 
 The pairs tested while hacking on this are `en` < > `de`, plus a little `fr` < > `de`. Other languages may not work as well. The propertizing of entries isn't perfect, but it's good enough to rely on and is still being improved.
