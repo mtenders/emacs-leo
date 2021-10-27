@@ -445,8 +445,14 @@ Also makes case and variant markers superscript."
                 (if (string-match x result)
                     (leo--case-and-variant-marker-face result))
                 ;; match again starting from end of prev match
-                (if (string-match x result (match-end 0))
-                    (leo--case-and-variant-marker-face result)))
+                (if (string-match x result
+                                  ;; only when result is longer than match-end
+                                  ;; should prevent previous match data being used that is longer than the result
+                                  (when (>= (length result) (match-end 0)
+                                            (match-end 0))))
+                    (if (equal pos "Präpositionen/Pronomen")
+                        (leo--case-and-variant-marker-face-preps result)
+                      (leo--case-and-variant-marker-face result))))
               c-marker)))
   result)
 
