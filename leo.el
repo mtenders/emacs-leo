@@ -422,6 +422,14 @@ Also makes case and variant markers superscript."
                              'display '(raise 0.5))
                        match))
 
+(defun leo--case-and-variant-marker-face-preps (match)
+  "Add text property `leo-case-and-variant-marker-face' to string MATCH.
+Also makes case and variant markers superscript."
+  (set-text-properties (match-beginning 0) (match-end 0)
+                       (list 'face 'leo-case-and-variant-marker-face)
+                             ;; 'display '(raise 0.5))
+                       match))
+
 (defun leo--propertize-variant-markers-in-result (result)
   "Add property `leo-case-and-variant-marker-face' to variant markers in RESULT."
   (let ((v-marker '("BE" "AE" "espAE" "espBE"))
@@ -436,7 +444,7 @@ Also makes case and variant markers superscript."
               v-marker)))
   result)
 
-(defun leo--propertize-case-markers-in-result (result)
+(defun leo--propertize-case-markers-in-result (result pos)
   "Add property `leo-case-and-variant-marker-face' to case markers in RESULT."
   (let ((c-marker '("Dat\\." "Nom\\." "Gen\\." "Akk\\."))
         (case-fold-search nil)) ; case-sensitive matching
@@ -554,7 +562,7 @@ List items in words-list are applied as both split lists and whole strings."
           (setq marks-p t)))
     marks-p))
 
-(defun leo--propertize-result-string (result leo-words-list)
+(defun leo--propertize-result-string (result leo-words-list pos)
   "Return a nicely formatted and propertized RESULT string for printing a side.
 LEO-WORDS-LIST is the list of words and phrases in <words>, which will be propertized in result."
   (let* ((cases '("Nom\\." "Akk\\." "Dat\\." "Gen\\."))
@@ -569,13 +577,13 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
       (when has-variants-p
         (leo--propertize-variant-markers-in-result result))
       (when has-cases-p
-        (leo--propertize-case-markers-in-result result))
+        (leo--propertize-case-markers-in-result result pos))
       ;; handle any accidental propertizing of past participles:
        (leo--propertize-past-participles-in-result result)
       result))
 
 ;;; PRINTING
-(defun leo--print-single-side (side)
+(defun leo--print-single-side (side pos)
   "Print a single SIDE of a result entry."
   (let* ((words-list (cdr (assoc 'words-list side)))
          (result (cdr (assoc 'result side)))
@@ -599,17 +607,17 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
                                (car words-list) "'"))
            " "))
       (when result
-        (leo--propertize-result-string result words-list))))))
+        (leo--propertize-result-string result words-list pos))))))
 
-(defun leo--print-single-entry (entry)
+(defun leo--print-single-entry (entry pos)
   "Print an ENTRY, consisting of two sides of a result."
-  (leo--print-single-side (car entry))
+  (leo--print-single-side (car entry) pos)
   (insert
    (concat
     "\n           "
     (propertize "--> "
                 'face 'leo-auxiliary-face)))
-  (leo--print-single-side (cadr entry))
+  (leo--print-single-side (cadr entry) pos)
   (insert "\n\n"))
 
 (defun leo--print-single-section (section)
@@ -627,7 +635,7 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
                  'help-echo (concat "View more results for this part of speech"))
      "\n\n")
     (mapcar (lambda (x)
-              (leo--print-single-entry x))
+              (leo--print-single-entry x section-pos))
             section-entries)))
 
 (defun leo--print-translation (results word similar)
