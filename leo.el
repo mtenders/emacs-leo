@@ -47,14 +47,12 @@
 ;;; Code:
 (require 'xml)
 (require 'dom)
+(require 'shr)
 (require 'browse-url)
 (require 'url-cache)
 (require 'text-property-search)
 (when (require 'dictcc nil :noerror)
   (declare-function dictcc "dictcc"))
-
-(declare-function shr-browse-url "shr")
-(defvar shr-map)
 
 (defvar url-user-agent)
 
