@@ -1,16 +1,16 @@
 ;;; leo.el --- Interface for dict.leo.org -*- lexical-binding:t -*-
 ;;
-;; Copyright (C) 2020 M.T. Enders <michael AT enders.io>
+;; Copyright (C) 2020 M.T. Enders <michael AT michael-enders.com>
 ;;               2021 Marty Hiatt <mousebot AT riseup.net>
 ;;
-;; Author: M.T. Enders <michael AT enders.io>
+;; Author: M.T. Enders <michael AT michael-enders.com>
 ;;         Marty Hiatt <mousebot AT riseup.net>
 ;; Created: 21 Oct 2020
 ;;
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: convenience, translate
-;; URL: https://git.blast.noho.st/mouse/emacs-leo
-;; Version: 0.2
+;; URL: https://github.com/mtenders/emacs-leo
+;; Version: 0.3
 ;; Prefix: leo
 ;; Separator: -
 

@@ -1,6 +1,7 @@
 # leo.el
+[![MELPA](https://melpa.org/packages/leo-badge.svg)](https://melpa.org/#/leo)
 
-This package allows you to interact with [Leo.de](https://leo.de) dictionaries from within emacs. It extends [emacs-leo](https://github.com/mtenders/emacs-leo).
+This package allows you to interact with [Leo.de](https://leo.de) dictionaries from within emacs.
 
 NB: this repo has now been merged into [emacs-leo](https://github.com/mtenders/emacs-leo), so you can install it from MELPA.
 
