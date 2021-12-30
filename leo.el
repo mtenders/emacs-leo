@@ -904,11 +904,12 @@ Return 30 results for a single POS, rather than 16 for every POS."
      similar-list)))
 
 ;;;###autoload
-(defun leo-translate-word (word &optional prefix)
-  "Translate WORD between language set by `leo-language' and German.
+(defun leo-translate-word (&optional prefix)
+  "Translate a word between language set by `leo-language' and German.
 Show translations in new buffer window.
+Term to translate is either word-at-point or input by the user.
 Optional arg PREFIX prompts to set language for this search."
-  (interactive "sTranslate: \nP")
+  (interactive "P")
   (let* ((language-candidates
           ;; transpose alist for comp read to display full lang name
           (mapcar (lambda (x)
@@ -916,7 +917,10 @@ Optional arg PREFIX prompts to set language for this search."
                   leo-languages-full))
          ;; get stored lang if we are already in a results page:
          (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
-                          leo-language))) ;fallback
+                          leo-language)) ;fallback
+         (word
+          (read-string (format "Translate (%s): " (or (current-word) ""))
+                       nil nil (current-word))))
     (if prefix
         ;; if prefix: prompt for language to search for:
         (let ((lang-prefix (completing-read
@@ -928,29 +932,6 @@ Optional arg PREFIX prompts to set language for this search."
                           word))
       ;; else normal search:
       (leo--translate lang-stored word))))
-
-;;;###autoload
-(defun leo-translate-at-point (&optional prefix)
-  "Translate word under cursor between `leo-language' and German.
-Show translations in new buffer window.
-Optional arg PREFIX prompts to set language for this search."
-  (interactive "P")
-  (let* ((language-candidates
-          ;; transpose alist so comp read displays full lang name
-          (mapcar (lambda (x)
-                    (cons (cdr x) (car x)))
-                  leo-languages-full)))
-    (if prefix
-        ;; if prefix: prompt for language to search for:
-        (let ((lang (completing-read
-                     (format "Language (to pair with German) (%s): "
-                             (car (rassoc leo-language language-candidates)))
-                     language-candidates nil t nil nil
-                     (rassoc leo-language language-candidates))))
-          (leo--translate (cdr (assoc lang language-candidates))
-                          (current-word)))
-      ;; else normal search:
-      (leo--translate leo-language (current-word)))))
 
 (define-derived-mode leo-mode special-mode "leo"
   :group 'leo
