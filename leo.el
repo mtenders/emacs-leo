@@ -419,12 +419,21 @@ Each contains two sides, or results in a pair of languages."
 Also makes case and variant markers superscript."
   (set-text-properties (match-beginning 0) (match-end 0)
                        (list 'face 'leo-case-and-variant-marker-face
-                             'display '(raise 0.5))
+                             'display
+                             ;; only if not after a "+" or "/":
+                             (when
+                                 (with-temp-buffer
+                                   (insert match)
+                                   (goto-char (match-beginning 0))
+                                   ; match includes + so looking-at:
+                                   (and (not (looking-at "+"))
+                                        (not (looking-at "/"))))
+                               '(raise 0.5)))
                        match))
 
 (defun leo--case-and-variant-marker-face-preps (match)
-  "Add text property `leo-case-and-variant-marker-face' to string MATCH.
-Also makes case and variant markers superscript."
+  "Add text property `leo-case-and-variant-marker-face' to string MATCH."
+; doesn't make case and variant markers superscript."
   (set-text-properties (match-beginning 0) (match-end 0)
                        (list 'face 'leo-case-and-variant-marker-face)
                              ;; 'display '(raise 0.5))
@@ -456,7 +465,8 @@ POS is the part of speech of the entry the case markers are in."
                 ;; match again starting from end of prev match
                 (if (string-match x result
                                   ;; only when result is longer than match-end
-                                  ;; should prevent previous match data being used that is longer than the result
+                                  ;; should prevent previous match data being
+                                  ;; used that is longer than the result
                                   (when (>= (length result) (match-end 0))
                                             (match-end 0)))
                     (if (equal pos "Präpositionen/Pronomen")
