@@ -637,7 +637,7 @@ POS is the part os speech of the entry."
                  'face 'leo-heading-face
                  'mouse-face 'highlight
                  'keymap leo-result-heading-search-more-pos-map
-                 'help-echo (concat "View more results for this part of speech"))
+                 'help-echo (concat "Click or RET to view more results for this part of speech"))
      "\n\n")
     (mapcar (lambda (x)
               (leo--print-single-entry x section-pos))
