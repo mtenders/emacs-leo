@@ -431,48 +431,23 @@ Also makes case and variant markers superscript."
                                '(raise 0.5)))
                        match))
 
-(defun leo--case-and-variant-marker-face-preps (match)
-  "Add text property `leo-case-and-variant-marker-face' to string MATCH."
-; doesn't make case and variant markers superscript."
-  (set-text-properties (match-beginning 0) (match-end 0)
-                       (list 'face 'leo-case-and-variant-marker-face)
-                             ;; 'display '(raise 0.5))
-                       match))
-
-(defun leo--propertize-variant-markers-in-result (result)
-  "Add property `leo-case-and-variant-marker-face' to variant markers in RESULT."
-  (let ((v-marker '("BE" "AE" "espAE" "espBE"))
-        (case-fold-search nil)) ; case-sensitive matching
+(defun leo--propertize-case-or-variant-markers (markers result)
+  "Add `leo-case-and-variant-marker-face' to MARKERS in RESULT."
+  (let* ((case-fold-search nil)) ; case-sensitive matching
     (save-match-data
       (mapc (lambda (x)
-                (if (string-match x result)
-                    (leo--case-and-variant-marker-face result))
-                ;; match again starting from end of prev match
-                (if (string-match x result (match-end 0))
-                    (leo--case-and-variant-marker-face result)))
-              v-marker)))
-  result)
-
-(defun leo--propertize-case-markers-in-result (result pos)
-  "Add property `leo-case-and-variant-marker-face' to case markers in RESULT.
-POS is the part of speech of the entry the case markers are in."
-  (let ((c-marker '("Dat\\." "Nom\\." "Gen\\." "Akk\\."))
-        (case-fold-search nil)) ; case-sensitive matching
-    (save-match-data
-      (mapc (lambda (x)
-                (if (string-match x result)
-                    (leo--case-and-variant-marker-face result))
-                ;; match again starting from end of prev match
-                (if (string-match x result
-                                  ;; only when result is longer than match-end
-                                  ;; should prevent previous match data being
-                                  ;; used that is longer than the result
-                                  (when (>= (length result) (match-end 0))
-                                            (match-end 0)))
-                    (if (equal pos "Präpositionen/Pronomen")
-                        (leo--case-and-variant-marker-face-preps result)
-                      (leo--case-and-variant-marker-face result))))
-              c-marker)))
+              (when (string-match x result)
+                (leo--case-and-variant-marker-face result))
+              ;; match again starting from end of prev match
+              (when (string-match
+                     x result
+                     ;; only when result is longer than match-end
+                     ;; should prevent previous match data being
+                     ;; used that is longer than the result
+                     (when (>= (length result) (match-end 0))
+                       (match-end 0)))
+                (leo--case-and-variant-marker-face result)))
+            markers)))
   result)
 
 (defun leo--space-before-term (leo-words-list result)
@@ -573,7 +548,7 @@ List items in words-list are applied as both split lists and whole strings."
           (setq marks-p t)))
     marks-p))
 
-(defun leo--propertize-result-string (result leo-words-list pos)
+(defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT for printing a side.
 LEO-WORDS-LIST is the list of words and phrases in <words>, which
 will be propertized in result. POS is the part of speech of the
@@ -585,18 +560,20 @@ result."
          (result (leo--propertize-words-list-in-result
                   (leo--cull-double-spaces
                    (leo--space-before-term leo-words-list
-                                           (propertize result 'face 'leo-auxiliary-face)))
+                                           (propertize
+                                            result
+                                            'face 'leo-auxiliary-face)))
                   leo-words-list)))
-      (when has-variants-p
-        (leo--propertize-variant-markers-in-result result))
-      (when has-cases-p
-        (leo--propertize-case-markers-in-result result pos))
-      ;; handle any accidental propertizing of past participles:
-       (leo--propertize-past-participles-in-result result)
-      result))
+    (when has-variants-p
+      (leo--propertize-case-or-variant-markers vars result))
+    (when has-cases-p
+      (leo--propertize-case-or-variant-markers cases result))
+    ;; handle any accidental propertizing of past participles:
+    (leo--propertize-past-participles-in-result result)
+    result))
 
 ;;; PRINTING
-(defun leo--print-single-side (side pos)
+(defun leo--print-single-side (side)
   "Print a single SIDE of a result entry.
 POS is the part of speech of the side."
   (let* ((words-list (cdr (assoc 'words-list side)))
@@ -621,18 +598,17 @@ POS is the part of speech of the side."
                                (car words-list) "'"))
            " "))
       (when result
-        (leo--propertize-result-string result words-list pos))))))
+        (leo--propertize-result-string result words-list))))))
 
-(defun leo--print-single-entry (entry pos)
-  "Print an ENTRY, consisting of two sides of a result.
-POS is the part os speech of the entry."
-  (leo--print-single-side (car entry) pos)
+(defun leo--print-single-entry (entry)
+  "Print an ENTRY, consisting of two sides of a result."
+  (leo--print-single-side (car entry))
   (insert
    (concat
     "\n           "
     (propertize "--> "
                 'face 'leo-auxiliary-face)))
-  (leo--print-single-side (cadr entry) pos)
+  (leo--print-single-side (cadr entry))
   (insert "\n\n"))
 
 (defun leo--print-single-section (section)
@@ -647,10 +623,11 @@ POS is the part os speech of the entry."
                  'face 'leo-heading-face
                  'mouse-face 'highlight
                  'keymap leo-result-heading-search-more-pos-map
-                 'help-echo (concat "Click or RET to view more results for this part of speech"))
+                 'help-echo (concat
+                             "Click or RET to view more results for this part of speech"))
      "\n\n")
     (mapcar (lambda (x)
-              (leo--print-single-entry x section-pos))
+              (leo--print-single-entry x))
             section-entries)))
 
 (defun leo--print-translation (results word similar)
