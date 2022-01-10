@@ -208,23 +208,9 @@ is called with a prefix argument to set a non-default search
 language.")
 (make-variable-buffer-local 'leo--results-info)
 
-(defun leo--generate-url (lang word &optional side)
+(defun leo--generate-url (lang word &optional pos side)
   "Generate link to query for translations of WORD from LANG to German.
 Returns 16 results per POS."
-  (concat
-   "https://dict.leo.org/dictQuery/m-vocab/"
-   lang
-   "de/query.xml?tolerMode=nof&lp="
-   "de&lang=de&rmWords=off&rmSearch=on&search="
-   word
-   "&side="
-   (or side
-       "both")
-   "&order=basic&partial=show&multiwordShowSingle=on"))
-
-(defun leo--generate-url-single-pos (lang word pos)
-  "Generate link to query for translations of WORD between LANG and German.
-Will return 30 results for the given POS."
   (let* ((pos-list '(("Substantive" . "1")
                      ("Verben" . "2")
                      ("Adjektive/Adverbien" . "3")
@@ -237,9 +223,15 @@ Will return 30 results for the given POS."
      lang
      "de&lang=de&rmWords=off&rmSearch=on&search="
      word
-     "&searchLoc=0&side=both&order=basic&partial=show&fixedSect="
-     pos-as-num
-     "&sectLenMax=30")))
+     "&side="
+     (or side
+         "both")
+     "&order=basic&partial=show"
+     (when pos
+       (concat "&fixedSect="
+               pos-as-num
+               "&sectLenMax=30"))
+     "&multiwordShowSingle=on")))
 
 (defun leo--parse-xml (url)
   "Parse xml file retrieved from URL."
@@ -532,23 +524,23 @@ List items in words-list are applied as both split lists and whole strings."
                 ;; add term property separately to each word in term list
                 ;; for click to search each word separately, not whole term string:
                 (mapc (lambda (x)
-                          (string-match x result leo-last-match-end)
-                          (leo--add-term-prop-to-match result x))
-                        term-spl)
+                        (string-match x result leo-last-match-end)
+                        (leo--add-term-prop-to-match result x))
+                      term-spl)
                 ;; this presumes any repetion comes after not before any variant
                 (setq leo-last-match-end (match-end 0)))
             ;; ELSE match each word in term separately:
             (let ((leo-last-match-end-split))
               (mapc (lambda (x)
                       (when (string-match x result leo-last-match-end-split)
-                            (leo--add-props-to-match result)
-                            (leo--add-term-prop-to-match result x)
-                            (setq leo-last-match-end-split (match-end 0)))
+                        (leo--add-props-to-match result)
+                        (leo--add-term-prop-to-match result x)
+                        (setq leo-last-match-end-split (match-end 0)))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
                           (when (string-match x result (match-end 0))
-                                (leo--add-props-to-match result)
-                                (leo--add-term-prop-to-match result x))))
+                            (leo--add-props-to-match result)
+                            (leo--add-term-prop-to-match result x))))
                     term-spl)))))
       (setq leo-words-list (cdr leo-words-list)))
     result))
@@ -881,23 +873,27 @@ display if there are no results."
                      ", 'c': search with dictcc.el"))))
 
 (defun leo-translate-single-side (side)
+  "Retranslate last term searching only in SIDE.
+SIDE is a string of either \"left\" or \"right\"."
   (let ((word (plist-get leo--results-info 'term))
         (lang (plist-get leo--results-info 'lang)))
-    (leo--translate lang word side)))
+    (leo--translate lang word nil side)))
 
 (defun leo-translate-left-side-only ()
+  "Retranslate last term searching only on the left side."
   (interactive)
   (leo-translate-single-side "left"))
 
 (defun leo-translate-right-side-only ()
+  "Retranslate last term searching only on the right side."
   (interactive)
   (leo-translate-single-side "right"))
 
-(defun leo--translate (lang word &optional side)
+(defun leo--translate (lang word &optional pos side)
   "Translate WORD between LANG and German.
 SIDE is the side to search in, either \"left\" or \"right\"."
   (let* ((xml (leo--parse-xml
-               (leo--generate-url lang word side)))
+               (leo--generate-url lang word pos side)))
          (section-list (car (leo--get-result-section-list (car xml))))
          ;; similar terms to offer if no results:
          (similar-list (car (leo--get-result-similar-list (car xml)))))
@@ -911,17 +907,7 @@ SIDE is the side to search in, either \"left\" or \"right\"."
 (defun leo--translate-more-pos (lang word pos)
   "Translate WORD between LANG and German.
 Return 30 results for a single POS, rather than 16 for every POS."
-  (let* ((xml (leo--parse-xml
-               (leo--generate-url-single-pos lang word pos)))
-         (section-list (car (leo--get-result-section-list (car xml))))
-         ;; similar terms to offer if no results:
-         (similar-list (car (leo--get-result-similar-list (car xml)))))
-    (leo--open-translation-buffer
-     (leo--build-sections-list section-list)
-     (leo--extract-forum-subject-link-pairs xml)
-     word
-     lang
-     similar-list)))
+  (leo--translate lang word pos))
 
 ;;;###autoload
 (defun leo-translate-word (&optional prefix)
