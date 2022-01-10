@@ -157,6 +157,8 @@ variant markers in results."
     (define-key map (kbd ",") #'leo-previous-heading)
     (define-key map (kbd ".") #'leo-next-heading)
     (define-key map (kbd "f") #'leo-jump-to-forum-results)
+    (define-key map (kbd "<") #'leo-translate-left-side-only)
+    (define-key map (kbd ">") #'leo-translate-right-side-only)
     (when (require 'dictcc nil :noerror)
       (define-key map (kbd "c") #'leo--search-term-with-dictcc))
     map)
@@ -206,17 +208,19 @@ is called with a prefix argument to set a non-default search
 language.")
 (make-variable-buffer-local 'leo--results-info)
 
-(defun leo--generate-url (lang word)
+(defun leo--generate-url (lang word &optional side)
   "Generate link to query for translations of WORD from LANG to German.
 Returns 16 results per POS."
   (concat
    "https://dict.leo.org/dictQuery/m-vocab/"
    lang
    "de/query.xml?tolerMode=nof&lp="
-   lang
    "de&lang=de&rmWords=off&rmSearch=on&search="
    word
-   "&searchLoc=0&order=basic&partial=show&multiwordShowSingle=on"))
+   "&side="
+   (or side
+       "both")
+   "&order=basic&partial=show&multiwordShowSingle=on"))
 
 (defun leo--generate-url-single-pos (lang word pos)
   "Generate link to query for translations of WORD between LANG and German.
@@ -872,14 +876,28 @@ display if there are no results."
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (other-window 1))
   (message (concat "'t': search again, prefix: set language,\
- '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser"
+ '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser, '<'/'>': search in left/right lang only"
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
 
-(defun leo--translate (lang word)
-  "Translate WORD between LANG and German."
+(defun leo-translate-single-side (side)
+  (let ((word (plist-get leo--results-info 'term))
+        (lang (plist-get leo--results-info 'lang)))
+    (leo--translate lang word side)))
+
+(defun leo-translate-left-side-only ()
+  (interactive)
+  (leo-translate-single-side "left"))
+
+(defun leo-translate-right-side-only ()
+  (interactive)
+  (leo-translate-single-side "right"))
+
+(defun leo--translate (lang word &optional side)
+  "Translate WORD between LANG and German.
+SIDE is the side to search in, either \"left\" or \"right\"."
   (let* ((xml (leo--parse-xml
-               (leo--generate-url lang word)))
+               (leo--generate-url lang word side)))
          (section-list (car (leo--get-result-section-list (car xml))))
          ;; similar terms to offer if no results:
          (similar-list (car (leo--get-result-similar-list (car xml)))))
