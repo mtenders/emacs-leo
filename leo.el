@@ -47,12 +47,12 @@
 ;;; Code:
 (require 'xml)
 (require 'dom)
+(require 'shr)
 (require 'browse-url)
+(require 'url-cache)
+(require 'text-property-search)
 (when (require 'dictcc nil :noerror)
   (declare-function dictcc "dictcc"))
-
-(declare-function shr-browse-url "shr")
-(defvar shr-map)
 
 (defvar url-user-agent)
 
@@ -445,7 +445,8 @@ Also makes case and variant markers superscript."
   result)
 
 (defun leo--propertize-case-markers-in-result (result pos)
-  "Add property `leo-case-and-variant-marker-face' to case markers in RESULT."
+  "Add property `leo-case-and-variant-marker-face' to case markers in RESULT.
+POS is the part of speech of the entry the case markers are in."
   (let ((c-marker '("Dat\\." "Nom\\." "Gen\\." "Akk\\."))
         (case-fold-search nil)) ; case-sensitive matching
     (save-match-data
@@ -456,8 +457,8 @@ Also makes case and variant markers superscript."
                 (if (string-match x result
                                   ;; only when result is longer than match-end
                                   ;; should prevent previous match data being used that is longer than the result
-                                  (when (>= (length result) (match-end 0)
-                                            (match-end 0))))
+                                  (when (>= (length result) (match-end 0))
+                                            (match-end 0)))
                     (if (equal pos "Präpositionen/Pronomen")
                         (leo--case-and-variant-marker-face-preps result)
                       (leo--case-and-variant-marker-face result))))
@@ -563,8 +564,10 @@ List items in words-list are applied as both split lists and whole strings."
     marks-p))
 
 (defun leo--propertize-result-string (result leo-words-list pos)
-  "Return a nicely formatted and propertized RESULT string for printing a side.
-LEO-WORDS-LIST is the list of words and phrases in <words>, which will be propertized in result."
+  "Return a nicely formatted and propertized RESULT for printing a side.
+LEO-WORDS-LIST is the list of words and phrases in <words>, which
+will be propertized in result. POS is the part of speech of the
+result."
   (let* ((cases '("Nom\\." "Akk\\." "Dat\\." "Gen\\."))
          (vars '("BE" "AE" "espAE" "espBE"))
          (has-cases-p (leo-has-markers-p cases result))
@@ -584,7 +587,8 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
 
 ;;; PRINTING
 (defun leo--print-single-side (side pos)
-  "Print a single SIDE of a result entry."
+  "Print a single SIDE of a result entry.
+POS is the part of speech of the side."
   (let* ((words-list (cdr (assoc 'words-list side)))
          (result (cdr (assoc 'result side)))
          (table (cdr (assoc 'table side))))
@@ -610,7 +614,8 @@ LEO-WORDS-LIST is the list of words and phrases in <words>, which will be proper
         (leo--propertize-result-string result words-list pos))))))
 
 (defun leo--print-single-entry (entry pos)
-  "Print an ENTRY, consisting of two sides of a result."
+  "Print an ENTRY, consisting of two sides of a result.
+POS is the part os speech of the entry."
   (leo--print-single-side (car entry) pos)
   (insert
    (concat
