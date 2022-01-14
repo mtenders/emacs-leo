@@ -912,8 +912,8 @@ Return 30 results for a single POS, rather than 16 for every POS."
 ;;;###autoload
 (defun leo-translate-word (&optional prefix)
   "Translate a word between language set by `leo-language' and German.
-Show translations in new buffer window.
-Term to translate is either word at point or input by the user.
+Show translations in new buffer window. Term to translate is
+either the current region, word at point, or input by the user.
 Optional arg PREFIX prompts to set language for this search."
   (interactive "P")
   (let* ((language-candidates
@@ -924,9 +924,11 @@ Optional arg PREFIX prompts to set language for this search."
          ;; get stored lang if we are already in a results page:
          (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
                           leo-language)) ;fallback
+         (region (when (use-region-p)
+                   (buffer-substring-no-properties (region-beginning) (region-end))))
          (word
-          (read-string (format "Translate (%s): " (or (current-word) ""))
-                       nil nil (current-word))))
+          (read-string (format "Translate (%s): " (or region (current-word) ""))
+                       nil nil (or region (current-word)))))
     (if prefix
         ;; if prefix: prompt for language to search for:
         (let ((lang-prefix (completing-read
