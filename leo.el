@@ -866,7 +866,8 @@ display if there are no results."
     (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
-      (other-window 1))
+      (switch-to-buffer-other-window (get-buffer " *leo*")))
+      ;; (other-window 1))
   (message (concat "'t': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser, '<'/'>': search in left/right lang only"
                    (when (require 'dictcc nil :noerror)
