@@ -16,6 +16,7 @@ In the results buffer:
 - `,` and `.` to go to the previous/next part of speech heading.
 - `f` to jump to forum results
 - click on a part of speech heading to view more results of only that type.
+- `<` and `>` to limit search to source/target language.
 - `b` to view results in external browser
 - and `c` to search the same term with [dictcc.el](https://github.com/martenlienen/dictcc.el) if it's installed.
 
