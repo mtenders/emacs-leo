@@ -683,8 +683,8 @@ Uses `leo-browse-url-function' to decide which browser to use."
          (word (plist-get leo--results-info 'term))
          (search-url (concat "https://dict.leo.org/" lang-full "-deutsch/" word))
          (browse-url-browser-function (or leo-browse-url-function
-                                          (if (browse-url-can-use-xdg-open)
-                                              (browse-url-xdg-open search-url))
+                                          (when (browse-url-can-use-xdg-open)
+                                            '(browse-url-xdg-open))
                                           browse-url-secondary-browser-function
                                           browse-url-browser-function)))
     (browse-url search-url)))
