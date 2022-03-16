@@ -161,6 +161,8 @@ variant markers in results."
     (define-key map (kbd ">") #'leo-translate-right-side-only)
     (when (require 'dictcc nil :noerror)
       (define-key map (kbd "c") #'leo--search-term-with-dictcc))
+    (when (require 'helm-dictionary nil :noerror)
+      (define-key map (kbd "d") #'leo-search-in-helm-dictionary-de))
     map)
   "Keymap for leo mode.")
 
@@ -693,6 +695,12 @@ Uses `leo-browse-url-function' to decide which browser to use."
   "Repeat current search with dict.cc."
   (interactive)
   (dictcc (plist-get leo--results-info 'term)))
+
+(defun leo-search-in-helm-dictionary-de ()
+  ""
+  (interactive)
+  (let ((helm-dictionary-database (cdr (assoc "de-en" helm-dictionary-database))))
+    (helm-dictionary))) ; (plist-get leo--results-info 'term))))
 
 (defun leo--translate-word-click-search (event)
   "Translate word on mouse click EVENT between `leo-language' and German."
