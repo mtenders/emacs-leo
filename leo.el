@@ -696,6 +696,21 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (interactive)
   (dictcc (plist-get leo--results-info 'term)))
 
+(defun leo-browse-url-linguee ()
+  "Search for current term in browser with Lingee.de."
+  (interactive)
+  (let* ((query (plist-get leo--results-info 'term))
+         (query-split (split-string query " "))
+         (query-final (if (not (> (length query-split) 1))
+                          query
+                        (string-join query-split "+"))))
+    (browse-url-generic (concat
+                         "https://www.linguee.de/deutsch-englisch/search?source=auto&query="
+                         ;; "https://www.linguee.de/deutsch-englisch/uebersetzung/"
+                         query-final))))
+                       ;; (plist-get leo--results-info 'term)
+                       ;; ".html"))))
+
 (defun leo-search-in-helm-dictionary-de ()
   ""
   (interactive)
