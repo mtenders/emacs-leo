@@ -940,30 +940,34 @@ Show translations in new buffer window. Term to translate is
 either the current region, word at point, or input by the user.
 Optional arg PREFIX prompts to set language for this search."
   (interactive "P")
-  (let* ((language-candidates
-          ;; transpose alist for comp read to display full lang name
-          (mapcar (lambda (x)
-                    (cons (cdr x) (car x)))
-                  leo-languages-full))
-         ;; get stored lang if we are already in a results page:
-         (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
-                          leo-language)) ;fallback
-         (region (when (use-region-p)
-                   (buffer-substring-no-properties (region-beginning) (region-end))))
-         (word
-          (read-string (format "Translate (%s): " (or region (current-word) ""))
-                       nil nil (or region (current-word)))))
-    (if prefix
-        ;; if prefix: prompt for language to search for:
-        (let ((lang-prefix (completing-read
-                            (format "Language (to pair with German) (%s): "
-                                    (car (rassoc leo-language language-candidates)))
-                            language-candidates nil t nil nil
-                            (rassoc leo-language language-candidates))))
-          (leo--translate (cdr (assoc lang-prefix language-candidates))
-                          word))
-      ;; else normal search:
-      (leo--translate lang-stored word))))
+  (let ((leo-buffer (get-buffer " *leo*")))
+    (if (and (bufferp leo-buffer)
+             (not (equal (current-buffer) leo-buffer)))
+        (switch-to-buffer-other-window leo-buffer)
+      (let* ((language-candidates
+              ;; transpose alist for comp read to display full lang name
+              (mapcar (lambda (x)
+                        (cons (cdr x) (car x)))
+                      leo-languages-full))
+             ;; get stored lang if we are already in a results page:
+             (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
+                              leo-language)) ;fallback
+             (region (when (use-region-p)
+                       (buffer-substring-no-properties (region-beginning) (region-end))))
+             (word
+              (read-string (format "Translate (%s): " (or region (current-word) ""))
+                           nil nil (or region (current-word)))))
+        (if prefix
+            ;; if prefix: prompt for language to search for:
+            (let ((lang-prefix (completing-read
+                                (format "Language (to pair with German) (%s): "
+                                        (car (rassoc leo-language language-candidates)))
+                                language-candidates nil t nil nil
+                                (rassoc leo-language language-candidates))))
+              (leo--translate (cdr (assoc lang-prefix language-candidates))
+                              word))
+          ;; else normal search:
+          (leo--translate lang-stored word))))))
 
 (define-derived-mode leo-mode special-mode "leo"
   :group 'leo
