@@ -19,6 +19,7 @@ In the results buffer:
 - `<` and `>` to limit search to source/target language.
 - `b` to view results in external browser
 <!-- - `d` to search the same term in [helm-dictionary](https://github.com/emacs-helm/helm-dictionary). (for this to work, one of the dictionaries in `helm-dictionary-database` needs to be named `de-en`, for example `("de-en" . "~/path/to/dictionaries/de-en.ding")`.) -->
+- `l` to browse the results in [linguee.de](https://www.linguee.de)
 - and `c` to search the same term with [dictcc.el](https://github.com/martenlienen/dictcc.el) if it's installed.
 
 
