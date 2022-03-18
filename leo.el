@@ -57,6 +57,10 @@
 (when (require 'helm-dictionary nil :noerror)
   (declare-function helm-dictionary "helm-dictionary")
   (defvar helm-dictionary-database))
+
+(when (require 'pdf-tools nil :no-error)
+  (declare-function pdf-view-active-region-text "pdf-view"))
+
 (defvar url-user-agent)
 
 (defgroup leo nil
@@ -746,7 +750,7 @@ Word or phrase at point is determined by button text property."
                (next-single-property-change (point) 'button))))
     (leo--translate lang text)))
 
-(defun leo--translate-word-click-search-more-pos (event)
+(defun leo--translate-word-click-search-more-pos (_event)
   "Translate word on mouse click EVENT between `leo-language' and German."
   (interactive "e")
   (let ((lang (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
@@ -954,8 +958,10 @@ Optional arg PREFIX prompts to set language for this search."
          ;; get stored lang if we are already in a results page:
          (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
                           leo-language)) ;fallback
-         (region (when (use-region-p)
-                   (buffer-substring-no-properties (region-beginning) (region-end))))
+         (region (if (equal major-mode 'pdf-view-mode)
+                     (pdf-view-active-region-text)
+                   (when (use-region-p)
+                     (buffer-substring-no-properties (region-beginning) (region-end)))))
          (word
           (read-string (format "Translate (%s): " (or region (current-word) ""))
                        nil nil (or region (current-word)))))
