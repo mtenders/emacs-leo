@@ -54,6 +54,9 @@
 (when (require 'dictcc nil :noerror)
   (declare-function dictcc "dictcc"))
 
+(when (require 'helm-dictionary nil :noerror)
+  (declare-function helm-dictionary "helm-dictionary")
+  (defvar helm-dictionary-database))
 (defvar url-user-agent)
 
 (defgroup leo nil
@@ -712,14 +715,12 @@ Uses `leo-browse-url-function' to decide which browser to use."
                        ;; ".html"))))
 
 (defun leo-search-in-helm-dictionary-de ()
-  ""
-  ;;FIXME for now helm-dict doesn't respect specifying default input
-  ;;so it doesn't search our term by default
+  "Search for current query in `helm-dictionary'."
   (interactive)
   (let ((query ;(concat "\b" ;; doesn't work
                        (plist-get leo--results-info 'term)))
                 ;       "\b"))
-        ;; (helm-maybe-use-default-as-input t)) ;; has no effect!
+    ;; (helm-maybe-use-default-as-input t)) ;; has no effect!
     (helm-dictionary (assoc "de-en" helm-dictionary-database) query)))
 
 (defun leo--translate-word-click-search (event)
