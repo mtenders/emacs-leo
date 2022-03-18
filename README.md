@@ -3,7 +3,7 @@
 
 This package allows you to interact with [Leo.de](https://leo.de) dictionaries from within emacs.
 
-It provides the command `leo-translate-word`. If no other phrase is entered, the word currently under the cursor is used. It translates between German and the language set by the custom variable `leo-language`. The second language can also be specified interactively by invoking the commands with a prefix argument.
+It provides the command `leo-translate-word`. If no other phrase is entered, the word currently under the cursor is used. If the region is active, it is used (this also works in `pdf-view-mode`). It translates between German and the language set by the custom variable `leo-language`. The second language can also be specified interactively by invoking the commands with a prefix argument.
 
 Results are sorted by part of speech, and display all additional information about the term such as usage, case markers, linguistic variant, etc. They also include a direct link to conjugation or inflection tables, shown as the icon `▦` (or `#`).
 
@@ -18,7 +18,9 @@ In the results buffer:
 - click on a part of speech heading to view more results of only that type.
 - `<` and `>` to limit search to source/target language.
 - `b` to view results in external browser
+<!-- - `d` to search the same term in [helm-dictionary](https://github.com/emacs-helm/helm-dictionary). (for this to work, one of the dictionaries in `helm-dictionary-database` needs to be named `de-en`, for example `("de-en" . "~/path/to/dictionaries/de-en.ding")`.) -->
 - and `c` to search the same term with [dictcc.el](https://github.com/martenlienen/dictcc.el) if it's installed.
+
 
 Links to forum results are also displayed. It is better to view these externally, which you can do by `C-u RET` with point on an entry. 
 
