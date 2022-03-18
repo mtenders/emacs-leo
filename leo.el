@@ -960,7 +960,8 @@ Optional arg PREFIX prompts to set language for this search."
          (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
                           leo-language)) ;fallback
          (region (if (equal major-mode 'pdf-view-mode)
-                     (pdf-view-active-region-text)
+                     (when (region-active-p)
+                       (pdf-view-active-region-text))
                    (when (use-region-p)
                      (buffer-substring-no-properties (region-beginning) (region-end)))))
          (word
