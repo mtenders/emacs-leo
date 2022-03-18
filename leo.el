@@ -722,9 +722,9 @@ Uses `leo-browse-url-function' to decide which browser to use."
 (defun leo-search-in-helm-dictionary-de ()
   "Search for current query in `helm-dictionary'."
   (interactive)
-  (let ((query ;(concat "\b" ;; doesn't work
-         (plist-get leo--results-info 'term)))
-                ;; "\b"))
+  (let ((query (concat "\\b"
+                       (plist-get leo--results-info 'term)
+                       "\\b")))
     ;; (helm-maybe-use-default-as-input t)) ;; has no effect!
     (helm-dictionary (assoc "de-en" helm-dictionary-database) query)))
 
