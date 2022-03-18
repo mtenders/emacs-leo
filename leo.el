@@ -903,7 +903,10 @@ display if there are no results."
       (switch-to-buffer-other-window (get-buffer " *leo*")))
       ;; (other-window 1))
   (message (concat "'t': search again, prefix: set language,\
- '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser, '<'/'>': search in left/right lang only"
+ '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
+ '<'/'>': search in left/right lang only, 'l': search on linguee.de"
+                   (when (require 'helm-dictionary nil :noerror)
+                     ", 'd': search in helm-dictionary")
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
 
