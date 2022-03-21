@@ -36,3 +36,7 @@ The pairs tested while hacking on this are `en` < > `de`, plus a little `fr` < >
 It looks like this:
 
 ![emacs-leo-screenshot](./emacs-leo-screenshot.png)
+
+## other packages
+
+You may also be interested in my package for https://wordreference.com [wordreference.el](https://codeberg.org/martianh/wordreference.el)
