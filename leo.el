@@ -56,7 +56,10 @@
 
 (when (require 'helm-dictionary nil :noerror)
   (declare-function helm-dictionary "helm-dictionary")
-  (defvar helm-dictionary-database))
+  (defvar helm-dictionary-database)
+  (defvar leo-helm-dictionary-name "de-en"
+    "The name of the dictionary to use for `helm-dictionary' queries.\
+It must match the key of one of the dictionaries in `helm-dictionary-database'."))
 
 (when (require 'pdf-tools nil :no-error)
   (declare-function pdf-view-active-region-text "pdf-view"))
@@ -725,8 +728,7 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (let ((query (concat "\\b"
                        (plist-get leo--results-info 'term)
                        "\\b")))
-    ;; (helm-maybe-use-default-as-input t)) ;; has no effect!
-    (helm-dictionary (assoc "de-en" helm-dictionary-database) query)))
+    (helm-dictionary leo-helm-dictionary-name query t)))
 
 (defun leo--translate-word-click-search (event)
   "Translate word on mouse click EVENT between `leo-language' and German."
