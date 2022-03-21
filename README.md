@@ -39,4 +39,4 @@ It looks like this:
 
 ## other packages
 
-You may also be interested in my package for https://wordreference.com [wordreference.el](https://codeberg.org/martianh/wordreference.el)
+You may also be interested in [wordreference.el](https://codeberg.org/martianh/wordreference.el), my package for https://wordreference.com.
