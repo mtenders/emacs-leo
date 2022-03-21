@@ -708,7 +708,7 @@ Uses `leo-browse-url-function' to decide which browser to use."
   (dictcc (plist-get leo--results-info 'term)))
 
 (defun leo-browse-url-linguee ()
-  "Search for current term in browser with Lingee.de."
+  "Search for current term in browser with Linguee.de."
   (interactive)
   (let* ((query (plist-get leo--results-info 'term))
          (query-split (split-string query " "))
@@ -964,9 +964,9 @@ Optional arg PREFIX prompts to set language for this search."
          ;; get stored lang if we are already in a results page:
          (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
                           leo-language)) ;fallback
-         (region (if (equal major-mode 'pdf-view-mode)
-                     (when (region-active-p)
-                       (pdf-view-active-region-text))
+         (region (if (and (equal major-mode 'pdf-view-mode)
+                          (region-active-p))
+                     (car (pdf-view-active-region-text))
                    (when (use-region-p)
                      (buffer-substring-no-properties (region-beginning) (region-end)))))
          (word
