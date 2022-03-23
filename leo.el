@@ -163,6 +163,7 @@ variant markers in results."
     (define-key map (kbd "TAB") #'forward-button)
     (define-key map (kbd "<backtab>") #'backward-button)
     (define-key map (kbd "t") #'leo-translate-word)
+    (define-key map (kbd "s") #'leo-translate-word)
     (define-key map (kbd "b") #'leo-browse-url-results)
     (define-key map (kbd ",") #'leo-previous-heading)
     (define-key map (kbd ".") #'leo-next-heading)
