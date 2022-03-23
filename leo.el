@@ -856,7 +856,7 @@ Results are links to searches for themselves."
           (concat
            "Did you mean:\n\n "
            (mapconcat #'identity sim-words-propertized "  ")))
-      "\n\nHit 't' to search again.\n\n"))))
+      "\n\nHit 't'/'s' to search again.\n\n"))))
 
 (defun leo--make-buttons ()
   "Make all property ranges with button property into buttons."
@@ -922,7 +922,7 @@ display if there are no results."
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (switch-to-buffer-other-window (get-buffer " *leo*")))
       ;; (other-window 1))
-  (message (concat "'t': search again, prefix: set language,\
+  (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
  '<'/'>': search in left/right lang only, 'l': search on linguee.de"
                    (when (require 'helm-dictionary nil :noerror)
