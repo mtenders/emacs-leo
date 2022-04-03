@@ -7,7 +7,7 @@
 ;;         Marty Hiatt <martianhiatus AT riseup.net>
 ;; Created: 21 Oct 2020
 ;;
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "27.1") (s "1.12.0"))
 ;; Keywords: convenience, translate
 ;; URL: https://github.com/mtenders/emacs-leo
 ;; Version: 0.3
@@ -45,6 +45,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
+(require 's)
 (require 'xml)
 (require 'dom)
 (require 'shr)
@@ -180,27 +181,23 @@ variant markers in results."
 
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
-    ;; (let ((map (copy-keymap shr-map)))
     (define-key map [mouse-2] #'leo--translate-word-click-search)
     (define-key map (kbd "RET") #'leo--translate-word-return-search)
     map))
 
 (defvar leo-result-heading-search-more-pos-map
   (let ((map (make-sparse-keymap)))
-    ;; (let ((map (copy-keymap shr-map)))
     (define-key map [mouse-2] #'leo--translate-word-click-search-more-pos)
     (define-key map (kbd "RET") #'leo--translate-word-return-search-more-pos)
     map))
 
 (defvar leo-inflexion-table-map
   (let ((map (make-sparse-keymap)))
-    ;; (let ((map (copy-keymap shr-map)))
     (define-key map [mouse-2] #'leo-shr-browse-url-secondary)
     (define-key map (kbd "RET") #'leo-shr-browse-url-secondary)
     map))
 
 (defvar leo-forums-map
-  ;; (let ((map (make-sparse-keymap)))
   (let ((map (copy-keymap shr-map)))
     (define-key map [mouse-2] #'leo-shr-browse-url-secondary)
     (define-key map (kbd "RET") #'leo-shr-browse-url-secondary)
@@ -306,11 +303,9 @@ Returns 16 results per POS."
 
 (defun leo--get-entry-part-of-speech (entry)
   "Get the part of speech of an ENTRY."
-  (let ((cat (xml-get-children (car (leo--get-info-from-entry entry))
-                               'category)))
-    (xml-get-attribute
-     (car cat)
-     'type)))
+  (let ((cat (xml-get-children
+              (car (leo--get-info-from-entry entry)) 'category)))
+    (xml-get-attribute (car cat) 'type)))
 
 (defun leo--get-sides-from-entry (entry)
   "Get the parsed XML of the sides nodes from ENTRY."
@@ -460,7 +455,7 @@ by + or \\."
 
 (defun leo--propertize-case-or-variant-markers (markers result)
   "Add `leo-case-and-variant-marker-face' to MARKERS in RESULT."
-  (let* ((case-fold-search nil)) ; case-sensitive matching
+  (let* ((case-fold-search nil))
     (save-match-data
       (mapc (lambda (x)
               (when (string-match x result)
@@ -499,27 +494,12 @@ This is to handle the loss of our <br> tags in the XML."
             (setq result (replace-match
                           ;; regex matches preceding char so we get it
                           (concat (substring (match-string 0 result) 0 1)
-                                  ;; then a space
-                                  " "
+                                  " " ; then a space
                                   ;; then our term
                                   (substring (match-string 0 result) 1 nil))
                           t nil result))))
         (setq leo-words-list (cdr leo-words-list))))
     result))
-
-(defun leo--cull-double-spaces (result)
-  "Remove any double spaces from RESULT."
-  (save-match-data
-    ;; match char + 2 spaces + char:
-    (while (string-match "[^[:blank:]][[:blank:]]\\{2\\}[^[:blank:]]" result)
-      (setq result (replace-match
-                    ;; concat car before double space
-                    (concat (substring (match-string 0 result) 0 1)
-                            " "
-                            ;; car after double space
-                            (substring (match-string 0 result) 3 nil))
-                    t nil result))))
-  result)
 
 (defun leo--propertize-words-list-in-result (result leo-words-list)
   "Add properties to words in RESULT that match words in LEO-WORDS-LIST.
@@ -585,7 +565,7 @@ result."
          (has-cases-p (leo-has-markers-p cases result))
          (has-variants-p (leo-has-markers-p vars result))
          (result (leo--propertize-words-list-in-result
-                  (leo--cull-double-spaces
+                  (s-collapse-whitespace
                    (leo--space-before-term leo-words-list
                                            (propertize
                                             result
@@ -737,8 +717,8 @@ with a prefix arguemnt."
                          "https://www.linguee.de/deutsch-englisch/search?source=auto&query="
                          ;; "https://www.linguee.de/deutsch-englisch/uebersetzung/"
                          query-final))))
-                       ;; (plist-get leo--results-info 'term)
-                       ;; ".html"))))
+;; (plist-get leo--results-info 'term)
+;; ".html"))))
 
 (defun leo-search-in-helm-dictionary-de ()
   "Search for current query in `helm-dictionary'."
@@ -921,7 +901,7 @@ display if there are no results."
     (setq leo--results-info `(term ,word lang ,lang)))
   (if (not (equal (buffer-name (current-buffer)) " *leo*"))
       (switch-to-buffer-other-window (get-buffer " *leo*")))
-      ;; (other-window 1))
+  ;; (other-window 1))
   (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
  '<'/'>': search in left/right lang only, 'l': search on linguee.de"
