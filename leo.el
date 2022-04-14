@@ -464,6 +464,14 @@ by + or \\."
             markers)))
   result)
 
+(defun leo--remove-period-from-domain-string (result)
+  "Remove periods from [DOMAIN.] strings in RESULT."
+  (save-match-data
+    (when (string-match "\\[\\([A-Z]+\\)\\.\\]"
+                        result)
+      (setq result (replace-match "[\\1]" t nil result))))
+  result)
+
 (defun leo--space-before-term (leo-words-list result)
   "Ensure a space before any words in LEO-WORDS-LIST in string RESULT.
 This is to handle the loss of our <br> tags in the XML."
@@ -558,10 +566,12 @@ result."
          (has-variants-p (leo-has-markers-p vars result))
          (result (leo--propertize-words-list-in-result
                   (s-collapse-whitespace
-                   (leo--space-before-term leo-words-list
-                                           (propertize
-                                            result
-                                            'face 'leo-auxiliary-face)))
+                   (leo--space-before-term
+                    leo-words-list
+                    (propertize
+                     (leo--remove-period-from-domain-string
+                      result)
+                     'face 'leo-auxiliary-face)))
                   leo-words-list)))
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
