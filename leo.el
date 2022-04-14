@@ -369,18 +369,14 @@ Returns a string ."
 Returns a nested list of forum posts titles, urls, and teasers."
   (let* ((forumref (leo--map-get-children parsed-xml 'forumRef))
          (forumref-link (leo--map-get-children forumref 'link)))
-    (mapcar (lambda (x)
-              (leo--build-single-forum-list-pair x))
-            forumref-link)))
+    (mapcar #'leo--build-single-forum-list-pair forumref-link)))
 
 ;;; BUILDING RESULTS LISTS
 (defun leo--build-sections-list (section-list)
   "Return a list of sections from parsed XML SECTION-LIST.
 Sections are contain entries for a single part of speech."
   (let ((sections (xml-get-children section-list 'section)))
-    (mapcar (lambda (x)
-              (leo--build-section-from-entries x))
-            sections)))
+    (mapcar #'leo--build-section-from-entries sections)))
 
 (defun leo--build-section-from-entries (section)
   "Build a SECTION, or group of entries all of the one part of speech."
@@ -392,9 +388,7 @@ Sections are contain entries for a single part of speech."
 (defun leo--build-list-of-entries (entries)
   "Return a list of ENTRIES.
 Each contains two sides, or results in a pair of languages."
-  (mapcar (lambda (x)
-            (leo--build-entry-from-sides x))
-          entries))
+  (mapcar #'leo--build-entry-from-sides entries))
 
 (defun leo--build-entry-from-sides (entry)
   "Build an ENTRY, ie a list of two sides."
@@ -645,9 +639,7 @@ POS is the part of speech of the side."
   (let ((section-pos (caar section))
         (section-entries (cdar section)))
     (leo--insert-section-heading section-pos)
-    (mapcar (lambda (x)
-              (leo--print-single-entry x))
-            section-entries)))
+    (mapcar #'leo--print-single-entry section-entries)))
 
 (defun leo--print-translation (results word similar)
   "Format and print translation RESULTS.
@@ -656,9 +648,7 @@ display if results are nil."
   (with-current-buffer (get-buffer " *leo*")
     (if (null results) ;nil
         (leo--did-you-mean word similar)
-      (mapcar (lambda (x)
-                (leo--print-single-section x))
-              results))))
+      (mapcar #'leo--print-single-section results))))
 
 (defun leo--propertize-forum-title (forum-posts url)
   "Propertize POST-TITLE for FORUM-POSTS and URL."
