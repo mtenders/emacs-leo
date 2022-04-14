@@ -340,12 +340,6 @@ Remove redundant underscores from the result."
               (car (xml-node-children x)))
             word-node-list)))
 
-(defun leo--strip-trailing-period (string)
-  "Remove trailing period from STRING if it has one."
-  (if (string-match "\\.$" string)
-      (substring string 0 -1)
-    string))
-
 (defun leo--extract-flextable-from-side (side)
   "Extract the link to a term's inflexion table from a given SIDE.
 A side is either the source or target result for a given search.
