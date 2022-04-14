@@ -614,8 +614,8 @@ result."
          (has-variants-p (leo-has-markers-p vars result))
          (result ;(leo--propertize-words-list-in-result
           (propertize
-           (leo--process-result-string result leo-words-list)))
-           ;; 'face 'leo-auxiliary-face)))
+           (leo--process-result-string result leo-words-list))))
+    ;; 'face 'leo-auxiliary-face)))
     ;; leo-words-list)))
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
