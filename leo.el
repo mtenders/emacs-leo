@@ -591,6 +591,7 @@ List items in words-list are applied as both split lists and whole strings."
 
 (defun leo--process-result-string (result leo-words-list)
   ""
+  ;; FIXME: the order of this is totally shot
   (s-collapse-whitespace
    (leo--space-before-term
     leo-words-list
@@ -598,7 +599,9 @@ List items in words-list are applied as both split lists and whole strings."
      (leo--remove-space-before-marker
       (leo--remove-space-after-characters
        (leo--remove-space-after-word-hypens
-        result)))))))
+        (leo--propertize-words-list-in-result
+         (propertize result 'face 'leo-auxiliary-face)
+         leo-words-list))))))))
 
 (defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT for printing a side.
@@ -609,11 +612,11 @@ result."
          (vars '("BE" "AE" "espAE" "espBE"))
          (has-cases-p (leo-has-markers-p cases result))
          (has-variants-p (leo-has-markers-p vars result))
-         (result (leo--propertize-words-list-in-result
-                  (propertize
-                   (leo--process-result-string result leo-words-list)
-                   'face 'leo-auxiliary-face)
-                  leo-words-list)))
+         (result ;(leo--propertize-words-list-in-result
+          (propertize
+           (leo--process-result-string result leo-words-list)))
+           ;; 'face 'leo-auxiliary-face)))
+    ;; leo-words-list)))
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
     (when has-cases-p
@@ -899,9 +902,16 @@ Results are links to searches for themselves."
 
 (defun leo--propertize-term (term)
   "Propertize TERM with `leo-match-face'."
-  (while (search-forward-regexp (concat "\\b" term "\\b")
-                                nil 'noerror)
+  (while (search-forward-regexp
+          (concat "\\b" term "\\b")
+          nil 'noerror)
     (add-text-properties (- (point) (length term)) (point)
+                         '(face leo-match-face)))
+  (goto-char (point-min))
+  (while (search-forward-regexp
+          (concat "\\b" term "\\(AE\\|BE\\)")
+          nil 'noerror)
+    (add-text-properties (- (point) (+ 2 (length term))) (- (point) 2)
                          '(face leo-match-face))))
 
 (defun leo--propertize-search-term-in-results (word)
