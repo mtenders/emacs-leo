@@ -1,4 +1,4 @@
-;;; l\..el --- Interface for dict.leo.org -*- lexical-binding:t -*-
+;;; leo.el --- Interface for dict.leo.org -*- lexical-binding:t -*-
 ;;
 ;; Copyright (C) 2020 M.T. Enders <michael AT michael-enders.com>
 ;;               2021 Marty Hiatt <martianhiatus AT riseup.net>
@@ -589,6 +589,17 @@ List items in words-list are applied as both split lists and whole strings."
         (setq result (replace-match "-" t nil result 1))))
     result))
 
+(defun leo--process-result-string (result leo-words-list)
+  ""
+  (s-collapse-whitespace
+   (leo--space-before-term
+    leo-words-list
+    (leo--remove-period-from-domain-string
+     (leo--remove-space-before-marker
+      (leo--remove-space-after-characters
+       (leo--remove-space-after-word-hypens
+        result)))))))
+
 (defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT for printing a side.
 LEO-WORDS-LIST is the list of words and phrases in <words>, which
@@ -599,16 +610,9 @@ result."
          (has-cases-p (leo-has-markers-p cases result))
          (has-variants-p (leo-has-markers-p vars result))
          (result (leo--propertize-words-list-in-result
-                  (s-collapse-whitespace
-                   (leo--space-before-term
-                    leo-words-list
-                    (propertize
-                     (leo--remove-period-from-domain-string
-                      (leo--remove-space-before-marker
-                       (leo--remove-space-after-characters
-                        (leo--remove-space-after-word-hypens
-                         result))))
-                     'face 'leo-auxiliary-face)))
+                  (propertize
+                   (leo--process-result-string result leo-words-list)
+                   'face 'leo-auxiliary-face)
                   leo-words-list)))
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
