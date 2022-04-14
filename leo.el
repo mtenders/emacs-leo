@@ -467,8 +467,8 @@ by + or \\."
 (defun leo--remove-period-from-domain-string (result)
   "Remove periods from [DOMAIN.] strings in RESULT."
   (save-match-data
-    (when (string-match "\\[\\([A-Z]+\\)\\.\\]"
-                        result)
+    (while (string-match "\\[\\([A-Z]+\\)\\.\\]"
+                         result)
       (setq result (replace-match "[\\1]" t nil result))))
   result)
 
