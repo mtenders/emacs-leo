@@ -911,7 +911,8 @@ Results are links to searches for themselves."
   (while (search-forward-regexp
           (concat "\\b" term "\\(AE\\|BE\\)")
           nil 'noerror)
-    (add-text-properties (- (point) (+ 2 (length term))) (- (point) 2)
+    (backward-char 2)
+    (add-text-properties (- (point) (length term)) (point)
                          '(face leo-match-face))))
 
 (defun leo--propertize-search-term-in-results (word)
