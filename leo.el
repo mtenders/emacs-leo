@@ -471,9 +471,19 @@ by + or \\."
 (defun leo--remove-period-from-domain-string (result)
   "Remove periods from [DOMAIN.] strings in RESULT."
   (save-match-data
-    (while (string-match "\\[\\ \\([A-Z]+\\)\\.\\ \\]"
-                         result)
-      (setq result (replace-match "[\\1]" nil nil result))))
+    (while (string-match
+            ;; [ + opt SPC + DOMAIN + . + opt SPC + ]
+            "\\[\\(\\ \\)?\\(?4:[A-Z]+\\)\\.\\\\(\\ \\)?]"
+            result)
+      (setq result (replace-match "[\\4]" nil nil result))))
+  result)
+
+
+(defun leo--remove-period-before-colons (result)
+  "Remove periods that precede colons in RESULT."
+  (save-match-data
+    (while (string-match "\\.:" result)
+      (setq result (replace-match ":" nil nil result))))
   result)
 
 (defun leo--space-before-term (leo-words-list result)
