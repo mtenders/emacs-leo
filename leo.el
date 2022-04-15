@@ -539,7 +539,9 @@ List items in words-list are applied as both split lists and whole strings."
                 ;; add term property separately to each word in term list
                 ;; for click to search each word separately, not whole term string:
                 (mapc (lambda (x)
-                        (string-match x result leo-last-match-end)
+                        (string-match x
+                                      ;; (concat "\\b" x)
+                                      result leo-last-match-end)
                         (leo--add-term-prop-to-match result x))
                       term-spl)
                 ;; this presumes any repetion comes after not before any variant
@@ -547,13 +549,16 @@ List items in words-list are applied as both split lists and whole strings."
             ;; ELSE match each word in term separately:
             (let ((leo-last-match-end-split))
               (mapc (lambda (x)
-                      (when (string-match x result leo-last-match-end-split)
+                      (when (string-match (concat "\\b" x) ; boundary before only
+                                          result leo-last-match-end-split)
                         (leo--add-props-to-match result)
                         (leo--add-term-prop-to-match result x)
                         (setq leo-last-match-end-split (match-end 0)))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
-                          (when (string-match x result (match-end 0))
+                          (when (string-match (concat "\\b" x) ; boundary before only
+                                              ;;x
+                                              result (match-end 0))
                             (leo--add-props-to-match result)
                             (leo--add-term-prop-to-match result x))))
                     term-spl)))))
