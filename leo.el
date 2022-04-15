@@ -473,7 +473,7 @@ by + or \\."
   (save-match-data
     (while (string-match
             ;; [ + opt SPC + DOMAIN + . + opt SPC + ]
-            "\\[\\(\\ \\)?\\(?4:[A-Z]+\\)\\.\\\\(\\ \\)?]"
+            "\\[\\(\\ \\)?\\(?4:[A-Z]+\\)\\.\\(\\ \\)?]"
             result)
       (setq result (replace-match "[\\4]" nil nil result))))
   result)
@@ -571,14 +571,14 @@ List items in words-list are applied as both split lists and whole strings."
 
 (defun leo--remove-space-before-marker (result)
   "Remove space before case or variant marker in RESULT."
-  (let ((markers (append '("!" "\\?" ")" "/" "," "\\.")
+  (let ((markers (append '("!" "\\?" ")" "/" "," "\\." "\\]")
                          leo-case-markers leo-variant-markers))
         (case-fold-search nil))
     (dolist (marker markers result)
       (save-match-data
         (while (string-match (concat "\\ " marker) result)
           (setq result (replace-match (if (string-prefix-p "\\" marker)
-                                          (substring marker 2)
+                                          (substring marker 1)
                                         marker)
                                       t nil result)))))))
 
