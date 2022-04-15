@@ -574,34 +574,41 @@ List items in words-list are applied as both split lists and whole strings."
 
 (defun leo--remove-space-after-characters (result)
   "Remove space after certain characters in RESULT."
-  (let ((chars '("("))
+  (let ((chars '("(" "\\["))
         (case-fold-search nil))
     (dolist (char chars result)
       (save-match-data
         (while (string-match (concat char " ") result)
-          (setq result (replace-match char t nil result)))))))
+          (setq result (replace-match (if (string-prefix-p "\\" char)
+                                          (substring char 1)
+                                        char)
+                                      t nil result)))))))
 
-(defun leo--remove-space-after-word-hypens (result)
+(defun leo--remove-space-around-word-hypens (result)
   "Remove space after hyphens in words in RESULT."
   (let ((case-fold-search nil))
     (save-match-data
-      (while (string-match "[[:alpha:]]\\(- \\)" result) ; subexp to replace
-        (setq result (replace-match "-" t nil result 1))))
+      (while (string-match
+              ;; char + hyphen + SPC | char + hyphen + SPC
+              "[[:alpha:]]\\(- \\| -\\)" result)
+        (setq result (replace-match "-" t nil result 1)))) ; replace subexp
     result))
 
 (defun leo--process-result-string (result leo-words-list)
   ""
-  ;; FIXME: the order of this is totally shot
-  (s-collapse-whitespace
-   (leo--space-before-term
-    leo-words-list
-    (leo--remove-period-from-domain-string
-     (leo--remove-space-before-marker
-      (leo--remove-space-after-characters
-       (leo--remove-space-after-word-hypens
-        (leo--propertize-words-list-in-result
-         (propertize result 'face 'leo-auxiliary-face)
-         leo-words-list))))))))
+  (leo--propertize-words-list-in-result
+   (s-collapse-whitespace
+    (leo--space-before-term
+     leo-words-list
+     (propertize
+      (leo--remove-period-before-colons
+       (leo--remove-period-from-domain-string
+        (leo--remove-space-before-marker
+         (leo--remove-space-after-characters
+          (leo--remove-space-around-word-hypens
+           result)))))
+      'face 'leo-auxiliary-face)))
+   leo-words-list))
 
 (defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT for printing a side.
@@ -612,11 +619,7 @@ result."
          (vars '("BE" "AE" "espAE" "espBE"))
          (has-cases-p (leo-has-markers-p cases result))
          (has-variants-p (leo-has-markers-p vars result))
-         (result ;(leo--propertize-words-list-in-result
-          (propertize
-           (leo--process-result-string result leo-words-list))))
-    ;; 'face 'leo-auxiliary-face)))
-    ;; leo-words-list)))
+         (result (leo--process-result-string result leo-words-list)));)
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
     (when has-cases-p
