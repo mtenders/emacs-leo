@@ -610,7 +610,8 @@ List items in words-list are applied as both split lists and whole strings."
     result))
 
 (defun leo--process-result-string (result leo-words-list)
-  ""
+  "Process RESULT string with LEO-WORDS-LIST.
+Just a junk function for all our culling and propertizing hacks."
   (leo--propertize-words-list-in-result
    (s-collapse-whitespace
     (leo--space-before-term
