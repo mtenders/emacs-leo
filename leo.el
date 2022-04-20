@@ -454,6 +454,9 @@ by + or \\."
   (let* ((case-fold-search nil))
     (save-match-data
       (mapc (lambda (x)
+              ;; FIXME: variant markers need (concat x "\\b") so we don't
+              ;; match aconyms beginning with AE or BE. but mandating word
+              ;; boundaries this way doesn't work with case markers.
               (when (string-match x result)
                 (leo--case-and-variant-marker-face result))
               ;; match again starting from end of prev match
