@@ -226,6 +226,10 @@ is called with a prefix argument to set a non-default search
 language.")
 (make-variable-buffer-local 'leo--results-info)
 
+(defconst leo-case-markers '("Nom." "Akk." "Dat." "Gen."))
+
+(defconst leo-variant-markers '("BE" "AE" "espAE" "espBE"))
+
 (defun leo--generate-url (lang word &optional pos side)
   "Generate link to query for translations of WORD from LANG to German.
 Returns 16 results per POS."
@@ -321,7 +325,7 @@ Returns 16 results per POS."
 
 (defun leo--get-repr-children-strings-as-string (side)
   "Get the parsed XML of the childrend nodes of <repr> in SIDE."
-  (dom-texts (dom-child-by-tag side 'repr) ""))
+  (dom-texts (dom-child-by-tag side 'repr) " "))
 
 (defun leo--strip-redundant-scores (string)
   "Remove redundant underscores from STRING."
@@ -450,6 +454,9 @@ by + or \\."
   (let* ((case-fold-search nil))
     (save-match-data
       (mapc (lambda (x)
+              ;; FIXME: variant markers need (concat x "\\b") so we don't
+              ;; match aconyms beginning with AE or BE. but mandating word
+              ;; boundaries this way doesn't work with case markers.
               (when (string-match x result)
                 (leo--case-and-variant-marker-face result))
               ;; match again starting from end of prev match
@@ -467,9 +474,19 @@ by + or \\."
 (defun leo--remove-period-from-domain-string (result)
   "Remove periods from [DOMAIN.] strings in RESULT."
   (save-match-data
-    (while (string-match "\\[\\([A-Z]+\\)\\.\\]"
-                         result)
-      (setq result (replace-match "[\\1]" t nil result))))
+    (while (string-match
+            ;; [ + opt SPC + DOMAIN + . + opt SPC + ]
+            "\\[\\(\\ \\)?\\(?4:[A-Z]+\\)\\.\\(\\ \\)?]"
+            result)
+      (setq result (replace-match "[\\4]" nil nil result))))
+  result)
+
+
+(defun leo--remove-period-before-colons (result)
+  "Remove periods that precede colons in RESULT."
+  (save-match-data
+    (while (string-match "\\.:" result)
+      (setq result (replace-match ":" nil nil result))))
   result)
 
 (defun leo--space-before-term (leo-words-list result)
@@ -525,7 +542,9 @@ List items in words-list are applied as both split lists and whole strings."
                 ;; add term property separately to each word in term list
                 ;; for click to search each word separately, not whole term string:
                 (mapc (lambda (x)
-                        (string-match x result leo-last-match-end)
+                        (string-match x
+                                      ;; (concat "\\b" x)
+                                      result leo-last-match-end)
                         (leo--add-term-prop-to-match result x))
                       term-spl)
                 ;; this presumes any repetion comes after not before any variant
@@ -533,13 +552,16 @@ List items in words-list are applied as both split lists and whole strings."
             ;; ELSE match each word in term separately:
             (let ((leo-last-match-end-split))
               (mapc (lambda (x)
-                      (when (string-match x result leo-last-match-end-split)
+                      (when (string-match (concat "\\b" x) ; boundary before only
+                                          result leo-last-match-end-split)
                         (leo--add-props-to-match result)
                         (leo--add-term-prop-to-match result x)
                         (setq leo-last-match-end-split (match-end 0)))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
-                          (when (string-match x result (match-end 0))
+                          (when (string-match (concat "\\b" x) ; boundary before only
+                                              ;;x
+                                              result (match-end 0))
                             (leo--add-props-to-match result)
                             (leo--add-term-prop-to-match result x))))
                     term-spl)))))
@@ -555,6 +577,58 @@ List items in words-list are applied as both split lists and whole strings."
           (setq marks-p t)))
     marks-p))
 
+(defun leo--remove-space-before-marker (result)
+  "Remove space before case or variant marker in RESULT."
+  (let ((markers (append '("!" "\\?" ")" "/" "," "\\." "\\]")
+                         leo-case-markers leo-variant-markers))
+        (case-fold-search nil))
+    (dolist (marker markers result)
+      (save-match-data
+        (while (string-match (concat "\\ " marker) result)
+          (setq result (replace-match (if (string-prefix-p "\\" marker)
+                                          (substring marker 1)
+                                        marker)
+                                      t nil result)))))))
+
+(defun leo--remove-space-after-characters (result)
+  "Remove space after certain characters in RESULT."
+  (let ((chars '("(" "\\["))
+        (case-fold-search nil))
+    (dolist (char chars result)
+      (save-match-data
+        (while (string-match (concat char " ") result)
+          (setq result (replace-match (if (string-prefix-p "\\" char)
+                                          (substring char 1)
+                                        char)
+                                      t nil result)))))))
+
+(defun leo--remove-space-around-word-hypens (result)
+  "Remove space after hyphens in words in RESULT."
+  (let ((case-fold-search nil))
+    (save-match-data
+      (while (string-match
+              ;; char + hyphen + SPC | char + hyphen + SPC
+              "[[:alpha:]]\\(- \\| -\\)" result)
+        (setq result (replace-match "-" t nil result 1)))) ; replace subexp
+    result))
+
+(defun leo--process-result-string (result leo-words-list)
+  "Process RESULT string with LEO-WORDS-LIST.
+Just a junk function for all our culling and propertizing hacks."
+  (leo--propertize-words-list-in-result
+   (s-collapse-whitespace
+    (leo--space-before-term
+     leo-words-list
+     (propertize
+      (leo--remove-period-before-colons
+       (leo--remove-period-from-domain-string
+        (leo--remove-space-before-marker
+         (leo--remove-space-after-characters
+          (leo--remove-space-around-word-hypens
+           result)))))
+      'face 'leo-auxiliary-face)))
+   leo-words-list))
+
 (defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT for printing a side.
 LEO-WORDS-LIST is the list of words and phrases in <words>, which
@@ -564,15 +638,7 @@ result."
          (vars '("BE" "AE" "espAE" "espBE"))
          (has-cases-p (leo-has-markers-p cases result))
          (has-variants-p (leo-has-markers-p vars result))
-         (result (leo--propertize-words-list-in-result
-                  (s-collapse-whitespace
-                   (leo--space-before-term
-                    leo-words-list
-                    (propertize
-                     (leo--remove-period-from-domain-string
-                      result)
-                     'face 'leo-auxiliary-face)))
-                  leo-words-list)))
+         (result (leo--process-result-string result leo-words-list)));)
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
     (when has-cases-p
@@ -858,8 +924,16 @@ Results are links to searches for themselves."
 
 (defun leo--propertize-term (term)
   "Propertize TERM with `leo-match-face'."
-  (while (search-forward-regexp (concat "\\b" term "\\b")
-                                nil 'noerror)
+  (while (search-forward-regexp
+          (concat "\\b" term "\\b")
+          nil 'noerror)
+    (add-text-properties (- (point) (length term)) (point)
+                         '(face leo-match-face)))
+  (goto-char (point-min))
+  (while (search-forward-regexp
+          (concat "\\b" term "\\(AE\\|BE\\)")
+          nil 'noerror)
+    (backward-char 2)
     (add-text-properties (- (point) (length term)) (point)
                          '(face leo-match-face))))
 
