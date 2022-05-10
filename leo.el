@@ -1056,7 +1056,7 @@ Optional arg PREFIX prompts to set language for this search."
                           leo-language))                      ;fallback
          (region (leo--get-region))
          (word
-          (read-string (format "Translate (%s): " (or region (current-word) ""))
+          (read-string (format "Leo search (%s): " (or region (current-word) ""))
                        nil nil (or region (current-word)))))
     (if prefix
         ;; if prefix: prompt for language to search for:
