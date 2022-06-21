@@ -176,6 +176,7 @@ variant markers in results."
     (define-key map (kbd "l") #'leo-browse-url-linguee)
     (when (require 'helm-dictionary nil :noerror)
       (define-key map (kbd "d") #'leo-search-in-helm-dictionary-de))
+    (define-key map (kbd "d") #'leo-browse-url-duden)
     map)
   "Keymap for leo mode.")
 
@@ -788,6 +789,18 @@ with a prefix arguemnt."
                         (string-join query-split "+"))))
     (browse-url-generic (concat
                          "https://www.linguee.de/deutsch-englisch/search?source=auto&query="
+                         query-final))))
+
+(defun leo-browse-url-duden ()
+  "Search for current term in browser with Duden.de."
+  (interactive)
+  (let* ((query (plist-get leo--results-info 'term))
+         (query-split (split-string query " "))
+         (query-final (if (not (> (length query-split) 1))
+                          query
+                        (string-join query-split "+"))))
+    (browse-url-generic (concat
+                         "https://www.duden.de/rechtschreibung/"
                          query-final))))
 
 (defun leo-search-in-helm-dictionary-de ()
