@@ -953,7 +953,8 @@ Results are links to searches for themselves."
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
   (let ((inhibit-read-only t)
-        (word-spl (split-string word)))
+        (word-spl (split-string word
+                                nil t "\"")))
     (save-excursion
       (goto-char (point-min))
       (mapc (lambda (x)
