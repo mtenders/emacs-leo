@@ -227,7 +227,7 @@ is called with a prefix argument to set a non-default search
 language.")
 (make-variable-buffer-local 'leo--results-info)
 
-(defconst leo-case-markers '("Nom." "Akk." "Dat." "Gen."))
+(defconst leo-case-markers '("Nom\\." "Akk\\." "Dat\\." "Gen\\."))
 
 (defconst leo-variant-markers '("BE" "AE" "espAE" "espBE"))
 
@@ -581,15 +581,22 @@ List items in words-list are applied as both split lists and whole strings."
 (defun leo--remove-space-before-marker (result)
   "Remove space before case or variant marker in RESULT."
   (let ((markers (append '("!" "\\?" ")" "/" "," "\\." "\\]")
-                         leo-case-markers leo-variant-markers))
+                         leo-case-markers
+                         leo-variant-markers))
         (case-fold-search nil))
     (dolist (marker markers result)
       (save-match-data
         (while (string-match (concat "\\ " marker) result)
-          (setq result (replace-match (if (string-prefix-p "\\" marker)
-                                          (substring marker 1)
-                                        marker)
-                                      t nil result)))))))
+          (setq result
+                (replace-match
+                 (cond ((string-prefix-p "\\" marker)
+                        (substring marker 1))
+                       ;; handle backslashed periods in `leo-case-markers':
+                       ((string-suffix-p "\\." marker)
+                        (concat (substring marker 0 -2) "."))
+                       (t
+                        marker))
+                 t nil result)))))))
 
 (defun leo--remove-space-after-characters (result)
   "Remove space after certain characters in RESULT."
