@@ -503,11 +503,11 @@ This is to handle the loss of our <br> tags in the XML."
           ;; non-greedy one-or-more
           ;; shd match one char if matching
           (when (or (string-match "][[:alpha:]]+?" result)
-                    ;; or match AE/BE + term with not space
-                    (string-match (concat "E"
+                    ;; or match AE/BE + term with no space
+                    (string-match (concat "\\(A\\|B\\)E"
                                           (substring-no-properties
                                            ;; we don't care how it ends
-                                           term 0 1)) ;2 breaks one-letter search
+                                           term 0 1)) ; 2 breaks one-letter search
                                   result))
             (setq result (replace-match
                           ;; regex matches preceding char so we get it
