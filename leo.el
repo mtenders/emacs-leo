@@ -992,19 +992,20 @@ Results are links to searches for themselves."
 The search term WORD is propertized in results. The search is
 between LANG and German. SIMILAR is a list of suggestions to
 display if there are no results."
-  (with-output-to-temp-buffer " *leo*" ; makes it help-mode
+  (with-current-buffer (get-buffer-create " *leo*")
+    (read-only-mode -1)
+    (erase-buffer)
     (leo--print-results-buffer-heading word)
     (leo--print-translation results word similar)
     (leo--print-results-buffer-forum-heading word)
-    (leo--print-forums forums))
-  ;; make rly sure we are in leo buffer before we do anything
-  (with-current-buffer (get-buffer " *leo*")
+    (leo--print-forums forums)
     (leo--make-buttons)
     (leo--propertize-search-term-in-results word)
     (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
   (unless (equal (buffer-name (current-buffer)) " *leo*")
     (switch-to-buffer-other-window (get-buffer " *leo*")))
+  (goto-char (point-min))
   (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
  '<'/'>': search in left/right lang only, 'l': search on linguee.de"
