@@ -673,7 +673,8 @@ result."
         'mouse-face 'highlight
         'help-echo (concat "Browse inflexion table for '"
                            (car words-list) "'"))
-       " ")))
+       " ")
+    ""))
 
 (defun leo--print-single-side (side)
   "Print a single SIDE of a result entry.
@@ -682,18 +683,17 @@ POS is the part of speech of the side."
          (result (cdr (assoc 'result side)))
          (table (cdr (assoc 'table side))))
     (insert
-     (concat (leo--propertize-inflexion-table table words-list)
-             (when result
-               (leo--propertize-result-string result words-list))))))
+     (leo--propertize-inflexion-table table words-list)
+     (when result
+       (leo--propertize-result-string result words-list)))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
   (leo--print-single-side (car entry))
   (insert
-   (concat
-    "\n           "
-    (propertize "--> "
-                'face 'leo-auxiliary-face)))
+   "\n           "
+   (propertize "--> "
+               'face 'leo-auxiliary-face))
   (leo--print-single-side (cadr entry))
   (insert "\n\n"))
 
@@ -923,13 +923,12 @@ Results are links to searches for themselves."
                   sim-word-nodes))
          (sim-words-propertized (leo--propertize-similars sim-word-strings)))
     (insert
-     (concat
-      "No entries for " word ". "
-      (if sim-words-propertized
-          (concat
-           "Did you mean:\n\n "
-           (mapconcat #'identity sim-words-propertized "  ")))
-      "\n\nHit 't'/'s' to search again.\n\n"))))
+     "No entries for " word ". "
+     (if sim-words-propertized
+         (concat
+          "Did you mean:\n\n "
+          (mapconcat #'identity sim-words-propertized "  ")))
+     "\n\nHit 't'/'s' to search again.\n\n")))
 
 (defun leo--make-buttons ()
   "Make all property ranges with button property into buttons."
@@ -1004,8 +1003,8 @@ display if there are no results."
     (leo--propertize-search-term-in-results word)
     (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
-  (if (not (equal (buffer-name (current-buffer)) " *leo*"))
-      (switch-to-buffer-other-window (get-buffer " *leo*")))
+  (unless (equal (buffer-name (current-buffer)) " *leo*")
+    (switch-to-buffer-other-window (get-buffer " *leo*")))
   (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
  '<'/'>': search in left/right lang only, 'l': search on linguee.de"
