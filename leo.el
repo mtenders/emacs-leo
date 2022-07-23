@@ -155,8 +155,7 @@ agent."
 
 (defface leo-case-and-variant-marker-face
   '((t :inherit font-lock-comment-face :slant italic :height 0.8))
-  "Face used to fade and italicise language case markers and
-variant markers in results."
+  "Face used for case markers and variant markers in results."
   :group 'leo)
 
 (defvar leo-mode-map
