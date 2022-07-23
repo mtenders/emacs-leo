@@ -682,9 +682,10 @@ POS is the part of speech of the side."
          (result (cdr (assoc 'result side)))
          (table (cdr (assoc 'table side))))
     (insert
-     (leo--propertize-inflexion-table table words-list)
-     (when result
-       (leo--propertize-result-string result words-list)))))
+     (concat
+      (leo--propertize-inflexion-table table words-list)
+      (when result
+        (leo--propertize-result-string result words-list))))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
@@ -922,11 +923,12 @@ Results are links to searches for themselves."
                   sim-word-nodes))
          (sim-words-propertized (leo--propertize-similars sim-word-strings)))
     (insert
-     "No entries for " word ". "
-     (if sim-words-propertized
-         (concat
-          "Did you mean:\n\n "
-          (mapconcat #'identity sim-words-propertized "  ")))
+     (concat
+      "No entries for " word ". "
+      (if sim-words-propertized
+          (concat
+           "Did you mean:\n\n "
+           (mapconcat #'identity sim-words-propertized "  "))))
      "\n\nHit 't'/'s' to search again.\n\n")))
 
 (defun leo--make-buttons ()
