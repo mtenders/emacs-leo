@@ -556,8 +556,13 @@ List items in words-list are applied as both split lists and whole strings."
               (mapc (lambda (x)
                       (when (string-match (concat "\\b" x) ; boundary before only
                                           result leo-last-match-end-split)
-                        (leo--add-props-to-match result)
-                        (leo--add-term-prop-to-match result x)
+                        (let ((matches (s-matched-positions-all
+                                        (concat "\\b" x) result)))
+                          ;; propertize all separate matches:
+                          (mapc (lambda (match)
+                                  (leo--add-props-to-match result (car match) (cdr match))
+                                  (leo--add-term-prop-to-match result x (car match) (cdr match)))
+                                matches))
                         (setq leo-last-match-end-split (match-end 0)))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
