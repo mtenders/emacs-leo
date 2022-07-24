@@ -583,6 +583,7 @@ List items in words-list are applied as both split lists and whole strings."
   "Remove space before case or variant marker in RESULT."
   (let ((markers (append '("!" "\\?" ")" "/" ","
                            "\" " ; " followed by a space: come closing " are preceded by space
+                           "'" ; sometimes possessive is preceded by a space
                            "\\." "\\]")
                          leo-case-markers
                          leo-variant-markers))
