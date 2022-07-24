@@ -401,9 +401,9 @@ Each contains two sides, or results in a pair of languages."
             sides)))
 
 ;; PROPERTIZING
-(defun leo--add-props-to-match (match)
+(defun leo--add-props-to-match (match &optional start end)
   "Add text properties to string MATCH."
-  (add-text-properties (match-beginning 0) (match-end 0)
+  (add-text-properties (or start (match-beginning 0)) (or end (match-end 0))
                        (list 'button t
                              'follow-link t
                              'keymap leo-result-search-map
@@ -414,9 +414,9 @@ Each contains two sides, or results in a pair of languages."
                                          "Click to search leo for this term"))
                        match))
 
-(defun leo--add-term-prop-to-match (match term)
+(defun leo--add-term-prop-to-match (match term &optional start end)
   "Add text property 'term TERM to string MATCH."
-  (add-text-properties (match-beginning 0) (match-end 0)
+  (add-text-properties (or start (match-beginning 0)) (or end (match-end 0))
                        (list 'term term)
                        match))
 
