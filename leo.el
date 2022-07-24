@@ -530,7 +530,9 @@ List items in words-list are applied as both split lists and whole strings."
                                      (string-match "espBE" result)))
                             t)))
     (while leo-words-list
-      (let* ((term (car leo-words-list))
+      (let* ((term
+              (regexp-quote
+               (car leo-words-list)))
              (term-spl (split-string term)))
         (save-match-data
           (if (string-match term result leo-last-match-end) ; start from last match
