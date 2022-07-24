@@ -579,7 +579,9 @@ List items in words-list are applied as both split lists and whole strings."
 
 (defun leo--remove-space-before-marker (result)
   "Remove space before case or variant marker in RESULT."
-  (let ((markers (append '("!" "\\?" ")" "/" "," "\\." "\\]")
+  (let ((markers (append '("!" "\\?" ")" "/" ","
+                           "\" " ; " followed by a space: come closing " are preceded by space
+                           "\\." "\\]")
                          leo-case-markers
                          leo-variant-markers))
         (case-fold-search nil))
