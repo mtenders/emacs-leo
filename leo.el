@@ -650,7 +650,7 @@ result."
          (vars '("BE" "AE" "espAE" "espBE"))
          (has-cases-p (leo-has-markers-p cases result))
          (has-variants-p (leo-has-markers-p vars result))
-         (result (leo--process-result-string result leo-words-list)));)
+         (result (leo--process-result-string result leo-words-list)))
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
     (when has-cases-p
