@@ -9,7 +9,7 @@
 ;;
 ;; Package-Requires: ((emacs "27.1") (s "1.12.0"))
 ;; Keywords: convenience, translate, wp, dictionary
-;; URL: https://github.com/mtenders/emacs-leo
+;; URL: https://codeberg.org/martianh/emacs-leo
 ;; Version: 0.3
 ;; Prefix: leo
 ;; Separator: -

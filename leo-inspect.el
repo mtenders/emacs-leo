@@ -1,4 +1,4 @@
-;;; leo.el --- Indpection functions for for emacs-leo.el -*- lexical-binding:t -*-
+;;; leo.el --- Inspection functions for for emacs-leo.el -*- lexical-binding:t -*-
 ;;
 ;; Copyright (C) 2021 Marty Hiatt <martianhiatus AT riseup.net>
 ;;
@@ -7,8 +7,8 @@
 ;;
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: convenience, translate
-;; URL: https://git.blast.noho.st/mouse/emacs-leo
-;; Version: 0.2
+;; URL: https://codeberg.org/martianh/emacs-leo
+;; Version: 0.3
 ;; Prefix: leo
 ;; Separator: -
 ;;
