@@ -156,8 +156,7 @@ agent."
 
 (defface leo-case-and-variant-marker-face
   '((t :inherit font-lock-comment-face :slant italic :height 0.8))
-  "Face used to fade and italicise language case markers and
-variant markers in results."
+  "Face used for case markers and variant markers in results."
   :group 'leo)
 
 (defvar leo-mode-map
@@ -177,6 +176,7 @@ variant markers in results."
     (define-key map (kbd "l") #'leo-browse-url-linguee)
     (when (require 'helm-dictionary nil :noerror)
       (define-key map (kbd "d") #'leo-search-in-helm-dictionary-de))
+    (define-key map (kbd "d") #'leo-browse-url-duden)
     map)
   "Keymap for leo mode.")
 
@@ -227,7 +227,7 @@ is called with a prefix argument to set a non-default search
 language.")
 (make-variable-buffer-local 'leo--results-info)
 
-(defconst leo-case-markers '("Nom." "Akk." "Dat." "Gen."))
+(defconst leo-case-markers '("Nom\\." "Akk\\." "Dat\\." "Gen\\."))
 
 (defconst leo-variant-markers '("BE" "AE" "espAE" "espBE"))
 
@@ -509,11 +509,11 @@ This is to handle the loss of our <br> tags in the XML."
           ;; non-greedy one-or-more
           ;; shd match one char if matching
           (when (or (string-match "][[:alpha:]]+?" result)
-                    ;; or match AE/BE + term with not space
-                    (string-match (concat "E"
+                    ;; or match AE/BE + term with no space
+                    (string-match (concat "\\(A\\|B\\)E"
                                           (substring-no-properties
                                            ;; we don't care how it ends
-                                           term 0 1)) ;2 breaks one-letter search
+                                           term 0 1)) ; 2 breaks one-letter search
                                   result))
             (setq result (replace-match
                           ;; regex matches preceding char so we get it
@@ -537,7 +537,9 @@ List items in words-list are applied as both split lists and whole strings."
                                      (string-match "espBE" result)))
                             t)))
     (while leo-words-list
-      (let* ((term (car leo-words-list))
+      (let* ((term
+              (regexp-quote
+               (car leo-words-list)))
              (term-spl (split-string term)))
         (save-match-data
           (if (string-match term result leo-last-match-end) ; start from last match
@@ -586,16 +588,26 @@ List items in words-list are applied as both split lists and whole strings."
 
 (defun leo--remove-space-before-marker (result)
   "Remove space before case or variant marker in RESULT."
-  (let ((markers (append '("!" "\\?" ")" "/" "," "\\." "\\]")
-                         leo-case-markers leo-variant-markers))
+  (let ((markers (append '("!" "\\?" ")" "/" ","
+                           "\" " ; " followed by a space: come closing " are preceded by space
+                           "'" ; sometimes possessive is preceded by a space
+                           "\\." "\\]")
+                         leo-case-markers
+                         leo-variant-markers))
         (case-fold-search nil))
     (dolist (marker markers result)
       (save-match-data
         (while (string-match (concat "\\ " marker) result)
-          (setq result (replace-match (if (string-prefix-p "\\" marker)
-                                          (substring marker 1)
-                                        marker)
-                                      t nil result)))))))
+          (setq result
+                (replace-match
+                 (cond ((string-prefix-p "\\" marker)
+                        (substring marker 1))
+                       ;; handle backslashed periods in `leo-case-markers':
+                       ((string-suffix-p "\\." marker)
+                        (concat (substring marker 0 -2) "."))
+                       (t
+                        marker))
+                 t nil result)))))))
 
 (defun leo--remove-space-after-characters (result)
   "Remove space after certain characters in RESULT."
@@ -645,7 +657,7 @@ result."
          (vars '("BE" "AE" "espAE" "espBE"))
          (has-cases-p (leo-has-markers-p cases result))
          (has-variants-p (leo-has-markers-p vars result))
-         (result (leo--process-result-string result leo-words-list)));)
+         (result (leo--process-result-string result leo-words-list)))
     (when has-variants-p
       (leo--propertize-case-or-variant-markers vars result))
     (when has-cases-p
@@ -672,7 +684,8 @@ result."
         'mouse-face 'highlight
         'help-echo (concat "Browse inflexion table for '"
                            (car words-list) "'"))
-       " ")))
+       " ")
+    ""))
 
 (defun leo--print-single-side (side)
   "Print a single SIDE of a result entry.
@@ -681,18 +694,18 @@ POS is the part of speech of the side."
          (result (cdr (assoc 'result side)))
          (table (cdr (assoc 'table side))))
     (insert
-     (concat (leo--propertize-inflexion-table table words-list)
-             (when result
-               (leo--propertize-result-string result words-list))))))
+     (concat
+      (leo--propertize-inflexion-table table words-list)
+      (when result
+        (leo--propertize-result-string result words-list))))))
 
 (defun leo--print-single-entry (entry)
   "Print an ENTRY, consisting of two sides of a result."
   (leo--print-single-side (car entry))
   (insert
-   (concat
-    "\n           "
-    (propertize "--> "
-                'face 'leo-auxiliary-face)))
+   "\n           "
+   (propertize "--> "
+               'face 'leo-auxiliary-face))
   (leo--print-single-side (cadr entry))
   (insert "\n\n"))
 
@@ -795,6 +808,18 @@ with a prefix arguemnt."
                         (string-join query-split "+"))))
     (browse-url-generic (concat
                          "https://www.linguee.de/deutsch-englisch/search?source=auto&query="
+                         query-final))))
+
+(defun leo-browse-url-duden ()
+  "Search for current term in browser with Duden.de."
+  (interactive)
+  (let* ((query (plist-get leo--results-info 'term))
+         (query-split (split-string query " "))
+         (query-final (if (not (> (length query-split) 1))
+                          query
+                        (string-join query-split "+"))))
+    (browse-url-generic (concat
+                         "https://www.duden.de/rechtschreibung/"
                          query-final))))
 
 (defun leo-search-in-helm-dictionary-de ()
@@ -915,8 +940,8 @@ Results are links to searches for themselves."
       (if sim-words-propertized
           (concat
            "Did you mean:\n\n "
-           (mapconcat #'identity sim-words-propertized "  ")))
-      "\n\nHit 't'/'s' to search again.\n\n"))))
+           (mapconcat #'identity sim-words-propertized "  "))))
+     "\n\nHit 't'/'s' to search again.\n\n")))
 
 (defun leo--make-buttons ()
   "Make all property ranges with button property into buttons."
@@ -947,7 +972,8 @@ Results are links to searches for themselves."
 (defun leo--propertize-search-term-in-results (word)
   "Add `leo--match-face' to any instances of WORD in results buffer."
   (let ((inhibit-read-only t)
-        (word-spl (split-string word)))
+        (word-spl (split-string word
+                                nil t "\"")))
     (save-excursion
       (goto-char (point-min))
       (mapc (lambda (x)
@@ -979,19 +1005,20 @@ Results are links to searches for themselves."
 The search term WORD is propertized in results. The search is
 between LANG and German. SIMILAR is a list of suggestions to
 display if there are no results."
-  (with-output-to-temp-buffer " *leo*" ; makes it help-mode
+  (with-current-buffer (get-buffer-create " *leo*")
+    (read-only-mode -1)
+    (erase-buffer)
     (leo--print-results-buffer-heading word)
     (leo--print-translation results word similar)
     (leo--print-results-buffer-forum-heading word)
-    (leo--print-forums forums))
-  ;; make rly sure we are in leo buffer before we do anything
-  (with-current-buffer (get-buffer " *leo*")
+    (leo--print-forums forums)
     (leo--make-buttons)
     (leo--propertize-search-term-in-results word)
     (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
-  (if (not (equal (buffer-name (current-buffer)) " *leo*"))
-      (switch-to-buffer-other-window (get-buffer " *leo*")))
+  (unless (equal (buffer-name (current-buffer)) " *leo*")
+    (switch-to-buffer-other-window (get-buffer " *leo*")))
+  (goto-char (point-min))
   (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
  '<'/'>': search in left/right lang only, 'l': search on linguee.de"
