@@ -580,7 +580,7 @@ List items in words-list are applied as both split lists and whole strings."
   (let ((marks-p)
         (case-fold-search nil))
     (dolist (marker markers)
-      (if (string-match-p marker result)
+      (if (string-match-p (regexp-quote marker) result)
           (setq marks-p t)))
     marks-p))
 
@@ -639,15 +639,13 @@ Just a junk function for all our culling and propertizing hacks."
 LEO-WORDS-LIST is the list of words and phrases in <words>, which
 will be propertized in result. POS is the part of speech of the
 result."
-  (let* ((cases '("Nom\\." "Akk\\." "Dat\\." "Gen\\."))
-         (vars '("BE" "AE" "espAE" "espBE"))
-         (has-cases-p (leo-has-markers-p cases result))
-         (has-variants-p (leo-has-markers-p vars result))
+  (let* ((has-cases-p (leo-has-markers-p leo-case-markers result))
+         (has-variants-p (leo-has-markers-p leo-variant-markers result))
          (result (leo--process-result-string result leo-words-list)))
     (when has-variants-p
-      (leo--propertize-case-or-variant-markers vars result))
+      (leo--propertize-case-or-variant-markers leo-variant-markers result))
     (when has-cases-p
-      (leo--propertize-case-or-variant-markers cases result))
+      (leo--propertize-case-or-variant-markers leo-case-markers result))
     ;; handle any accidental propertizing of past participles:
     (leo--propertize-past-participles-in-result result)
     result))
