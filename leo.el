@@ -575,7 +575,7 @@ List items in words-list are applied as both split lists and whole strings."
   (let ((marks-p)
         (case-fold-search nil))
     (dolist (marker markers)
-      (if (string-match-p marker result)
+      (if (string-match-p (regexp-quote marker) result)
           (setq marks-p t)))
     marks-p))
 
