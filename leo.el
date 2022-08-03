@@ -275,9 +275,9 @@ Returns 16 results per POS."
    (lambda (node) (xml-get-children node child))
    seq))
 
-(defun leo--get-result-lang-pair (xml-node)
-  "Get the language pair attribute of an XML-NODE."
-  (xml-get-attribute xml-node 'lp))
+;; (defun leo--get-result-lang-pair (xml-node)
+;;   "Get the language pair attribute of an XML-NODE."
+;;   (xml-get-attribute xml-node 'lp))
 
 (defun leo--get-result-similar-list (xml-node)
   "Get the parsed XML of the list of similar terms from an XML-NODE."
@@ -301,15 +301,15 @@ Returns 16 results per POS."
   "Get the parsed XML of the entries from a SECTION."
   (xml-get-children section 'entry))
 
-(defun leo--get-info-from-entry (entry)
-  "Get the parsed XML of the info node of an ENTRY."
-  (xml-get-children entry 'info))
+;; (defun leo--get-info-from-entry (entry)
+;;   "Get the parsed XML of the info node of an ENTRY."
+;;   (xml-get-children entry 'info))
 
-(defun leo--get-entry-part-of-speech (entry)
-  "Get the part of speech of an ENTRY."
-  (let ((cat (xml-get-children
-              (car (leo--get-info-from-entry entry)) 'category)))
-    (xml-get-attribute (car cat) 'type)))
+;; (defun leo--get-entry-part-of-speech (entry)
+;;   "Get the part of speech of an ENTRY."
+;;   (let ((cat (xml-get-children
+;;               (car (leo--get-info-from-entry entry)) 'category)))
+;;     (xml-get-attribute (car cat) 'type)))
 
 (defun leo--get-sides-from-entry (entry)
   "Get the parsed XML of the sides nodes from ENTRY."
