@@ -326,6 +326,11 @@ Returns 16 results per POS."
 (defun leo--get-repr-children-strings-as-string (side)
   "Get the parsed XML of the childrend nodes of <repr> in SIDE."
   (dom-texts (dom-child-by-tag side 'repr) " "))
+;; would be nice to be able to do this here:
+;; (dom-texts (dom-child-by-tag side 'pwords) " "))
+;; or also to not force a space, as some words are split up by tags by not by
+;; spaces eg part of a word being in bold. but not adding a space seems to
+;; cause more troubles than it solves
 
 (defun leo--strip-redundant-scores (string)
   "Remove redundant underscores from STRING."
