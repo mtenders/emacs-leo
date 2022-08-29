@@ -171,7 +171,7 @@ agent."
     (define-key map (kbd "<") #'leo-translate-left-side-only)
     (define-key map (kbd ">") #'leo-translate-right-side-only)
     (when (require 'dictcc nil :noerror)
-      (define-key map (kbd "c") #'leo--search-term-with-dictcc))
+      (define-key map (kbd "c") #'leo-search-term-with-dictcc))
     (define-key map (kbd "l") #'leo-browse-url-linguee)
     (when (require 'helm-dictionary nil :noerror)
       (define-key map (kbd "d") #'leo-search-in-helm-dictionary-de))
@@ -782,7 +782,7 @@ with a prefix arguemnt."
   (let ((browse-url-browser-function browse-url-secondary-browser-function))
     (shr-browse-url)))
 
-(defun leo--search-term-with-dictcc ()
+(defun leo-search-term-with-dictcc ()
   "Repeat current search with dict.cc."
   (interactive)
   (dictcc (plist-get leo--results-info 'term)))
