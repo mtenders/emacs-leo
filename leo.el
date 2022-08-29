@@ -428,7 +428,7 @@ Each contains two sides, or results in a pair of languages."
 (defun leo--propertize-past-participles-in-result (result)
   "Set past participles in RESULT to `leo-auxiliary-face' only."
   (save-match-data
-    (when (string-match "|[ a-z,/]+,+[ a-z,/]+|" result)
+    (when (string-match "|[- a-z,/]+,+[- a-z,/]+|" result)
       ;; mandates a comma to differentiate this from DE adj. sets that
       ;; also use "|"
       (set-text-properties (match-beginning 0) (match-end 0)
