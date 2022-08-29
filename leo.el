@@ -9,7 +9,7 @@
 ;;
 ;; Package-Requires: ((emacs "27.1") (s "1.12.0"))
 ;; Keywords: convenience, translate, wp, dictionary
-;; URL: https://github.com/mtenders/emacs-leo
+;; URL: https://codeberg.org/martianh/emacs-leo
 ;; Version: 0.3
 ;; Prefix: leo
 ;; Separator: -
@@ -406,9 +406,9 @@ Each contains two sides, or results in a pair of languages."
             sides)))
 
 ;; PROPERTIZING
-(defun leo--add-props-to-match (match)
+(defun leo--add-props-to-match (match &optional start end)
   "Add text properties to string MATCH."
-  (add-text-properties (match-beginning 0) (match-end 0)
+  (add-text-properties (or start (match-beginning 0)) (or end (match-end 0))
                        (list 'button t
                              'follow-link t
                              'keymap leo-result-search-map
@@ -419,16 +419,16 @@ Each contains two sides, or results in a pair of languages."
                                          "Click to search leo for this term"))
                        match))
 
-(defun leo--add-term-prop-to-match (match term)
+(defun leo--add-term-prop-to-match (match term &optional start end)
   "Add text property 'term TERM to string MATCH."
-  (add-text-properties (match-beginning 0) (match-end 0)
+  (add-text-properties (or start (match-beginning 0)) (or end (match-end 0))
                        (list 'term term)
                        match))
 
 (defun leo--propertize-past-participles-in-result (result)
   "Set past participles in RESULT to `leo-auxiliary-face' only."
   (save-match-data
-    (when (string-match "|[ a-z,/]+,+[ a-z,/]+|" result)
+    (when (string-match "|[- a-z,/]+,+[- a-z,/]+|" result)
       ;; mandates a comma to differentiate this from DE adj. sets that
       ;; also use "|"
       (set-text-properties (match-beginning 0) (match-end 0)
@@ -561,8 +561,13 @@ List items in words-list are applied as both split lists and whole strings."
               (mapc (lambda (x)
                       (when (string-match (concat "\\b" x) ; boundary before only
                                           result leo-last-match-end-split)
-                        (leo--add-props-to-match result)
-                        (leo--add-term-prop-to-match result x)
+                        (let ((matches (s-matched-positions-all
+                                        (concat "\\b" x) result)))
+                          ;; propertize all separate matches:
+                          (mapc (lambda (match)
+                                  (leo--add-props-to-match result (car match) (cdr match))
+                                  (leo--add-term-prop-to-match result x (car match) (cdr match)))
+                                matches))
                         (setq leo-last-match-end-split (match-end 0)))
                       ;; match again starting at end of prev match
                       (if has-variants-p ; only run on variants
