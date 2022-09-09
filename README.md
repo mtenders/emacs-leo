@@ -12,6 +12,7 @@ In the results buffer:
 - click on a word to search for it
 - `<tab>` to a word or phrase then hit `<return>` to search for it
 - `t` or `s` to search again
+- `v` to instantly search for the most recent kill ring item (paste and search).
 - `C-u t` to search again and choose your language
 - `,` and `.` to go to the previous/next part of speech heading.
 - `f` to jump to forum results

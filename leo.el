@@ -170,6 +170,7 @@ agent."
     (define-key map (kbd "f") #'leo-jump-to-forum-results)
     (define-key map (kbd "<") #'leo-translate-left-side-only)
     (define-key map (kbd ">") #'leo-translate-right-side-only)
+    (define-key map (kbd "v") #'leo-paste-to-search)
     (when (require 'dictcc nil :noerror)
       (define-key map (kbd "c") #'leo-search-term-with-dictcc))
     (define-key map (kbd "l") #'leo-browse-url-linguee)
@@ -1066,21 +1067,27 @@ Return 30 results for a single POS, rather than 16 for every POS."
     (when (use-region-p)
       (buffer-substring-no-properties (region-beginning) (region-end)))))
 
+(defun leo-paste-to-search (&optional prefix)
+  "Call `leo-translate-word' with the most recent killed text as default input."
+  (interactive)
+  (leo-translate-word prefix (current-kill 0)))
+
 ;;;###autoload
-(defun leo-translate-word (&optional prefix)
+(defun leo-translate-word (&optional prefix default-input)
   "Translate a word between language set by `leo-language' and German.
 Show translations in new buffer window. Term to translate is
 either the current region, word at point, or input by the user.
-Optional arg PREFIX prompts to set language for this search."
+Optional arg PREFIX prompts to set language for this search.
+DEFAULT-INPUT is default text to search for."
   (interactive "P")
   (let* ((language-candidates (leo--transpose-langs leo-languages-full))
          ;; get stored lang if we are already in a results page:
          (lang-stored (or (plist-get leo--results-info 'lang) ;stored prefix lang choice
                           leo-language))                      ;fallback
          (region (leo--get-region))
-         (word
-          (read-string (format "Leo search (%s): " (or region (current-word) ""))
-                       nil nil (or region (current-word)))))
+         (word (or default-input
+                   (read-string (format "Leo search (%s): " (or region (current-word) ""))
+                                nil nil (or region (current-word))))))
     (if prefix
         ;; if prefix: prompt for language to search for:
         (let ((lang-prefix (completing-read
