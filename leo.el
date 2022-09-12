@@ -335,7 +335,7 @@ Returns 16 results per POS."
 
 (defun leo--strip-redundant-scores (string)
   "Remove redundant underscores from STRING."
-  (replace-regexp-in-string "[ ]+" "" string))
+  (replace-regexp-in-string "[  ]+" "" string)) ; 0x202F + 0xA0
 
 (defun leo--get-repr-children-strings-as-string-trimmed (side)
   "Get the parsed XML of the children nodes of <repr> in SIDE.
