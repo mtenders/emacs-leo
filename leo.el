@@ -426,10 +426,15 @@ Each contains two sides, or results in a pair of languages."
                        (list 'term term)
                        match))
 
-(defun leo--propertize-past-participles-in-result (result)
-  "Set past participles in RESULT to `leo-auxiliary-face' only."
+(defun leo--propertize-aux-info-in-result (result)
+  "Set auxiliary info in RESULT to `leo-auxiliary-face' only."
+  ;; We do this to remove buggy propertizing from the monster that is
+  ;; `leo--propertize-words-list-in-result'
   (save-match-data
-    (when (string-match "|[- a-z,/]+,+[- a-z,/]+|" result)
+    (when (or (string-match "|[- a-z,/]+,+[- a-z,/]+|" result)
+              (string-match "Pl: .+" result)
+              (string-match "infinitive: .+" result)
+              (string-match "Infinitiv: .+" result))
       ;; mandates a comma to differentiate this from DE adj. sets that
       ;; also use "|"
       (set-text-properties (match-beginning 0) (match-end 0)
@@ -652,8 +657,9 @@ result."
       (leo--propertize-case-or-variant-markers leo-variant-markers result))
     (when has-cases-p
       (leo--propertize-case-or-variant-markers leo-case-markers result))
-    ;; handle any accidental propertizing of past participles:
-    (leo--propertize-past-participles-in-result result)
+    ;; handle any accidental propertizing of past participles, infinitives,
+    ;; etc.:
+    (leo--propertize-aux-info-in-result result)
     result))
 
 ;;; PRINTING
