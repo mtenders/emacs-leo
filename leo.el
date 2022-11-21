@@ -194,14 +194,14 @@ agent."
 
 (defvar leo-inflexion-table-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [mouse-2] #'leo-shr-browse-url-secondary)
-    (define-key map (kbd "RET") #'leo-shr-browse-url-secondary)
+    (define-key map [mouse-2] #'leo-shr-browse-url)
+    (define-key map (kbd "RET") #'leo-shr-browse-url)
     map))
 
 (defvar leo-forums-map
   (let ((map (copy-keymap shr-map)))
-    (define-key map [mouse-2] #'leo-shr-browse-url-secondary)
-    (define-key map (kbd "RET") #'leo-shr-browse-url-secondary)
+    (define-key map [mouse-2] #'leo-shr-browse-url)
+    (define-key map (kbd "RET") #'leo-shr-browse-url)
     map))
 
 (defvar leo-languages-full
@@ -787,6 +787,16 @@ types of links, as `shr-browse-url' only uses one when called
 with a prefix arguemnt."
   (interactive)
   (let ((browse-url-browser-function browse-url-secondary-browser-function))
+    (shr-browse-url)))
+
+(defun leo-shr-browse-url ()
+  "Browse URL link at point using `browse-url-function'.
+\nI.e. usually an external browser. Used by `leo-forums-map' and
+`leo-inflexion-table-map' to mandate external browser for those
+types of links, as `shr-browse-url' only uses one when called
+with a prefix arguemnt."
+  (interactive)
+  (let ((browse-url-browser-function browse-url-browser-function))
     (shr-browse-url)))
 
 (defun leo-search-term-with-dictcc ()
