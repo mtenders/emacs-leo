@@ -541,12 +541,12 @@ List items in words-list are applied as both split lists and whole strings."
                                      (string-match "espBE" result)))
                             t)))
     (while leo-words-list
-      (let* ((term
-              (regexp-quote
-               (car leo-words-list)))
+      (let* ((term-no-regex (car leo-words-list))
+             (term
+              (regexp-quote term-no-regex))
              (term-spl (split-string term)))
         (save-match-data
-          (if (string-match term result leo-last-match-end) ; start from last match
+          (if (string-match (or term-no-regex term) result leo-last-match-end) ; start from last match
               ;; try to match and propertize full term first:
               ;; this avoids making each word in term a separate tab stop
               (progn
