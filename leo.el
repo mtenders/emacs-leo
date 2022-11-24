@@ -202,6 +202,9 @@ agent."
   (let ((map (copy-keymap shr-map)))
     (define-key map [mouse-2] #'leo-shr-browse-url)
     (define-key map (kbd "RET") #'leo-shr-browse-url)
+    ;; (define-key map (kbd "b") #'shr-browse-url)
+    ;; override shr-browse-url, which is already RET:
+    (define-key map (kbd "v") #'leo-paste-to-search)
     map))
 
 (defvar leo-languages-full
