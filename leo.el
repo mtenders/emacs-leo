@@ -52,6 +52,7 @@
 (require 'browse-url)
 (require 'url-cache)
 (require 'text-property-search)
+(require 'transient)
 (when (require 'dictcc nil :noerror)
   (declare-function dictcc "dictcc"))
 
@@ -171,6 +172,7 @@ agent."
     (define-key map (kbd "<") #'leo-translate-left-side-only)
     (define-key map (kbd ">") #'leo-translate-right-side-only)
     (define-key map (kbd "v") #'leo-paste-to-search)
+    (define-key map (kbd "?") #'leo-dispatch)
     (when (require 'dictcc nil :noerror)
       (define-key map (kbd "c") #'leo-search-term-with-dictcc))
     (define-key map (kbd "l") #'leo-browse-url-linguee)
@@ -179,6 +181,24 @@ agent."
     (define-key map (kbd "d") #'leo-browse-url-duden)
     map)
   "Keymap for leo mode.")
+
+(transient-define-prefix leo-dispatch
+  "leo results commands"
+  ["leo results commands"
+   [("TAB" "next button" forward-button)
+    ("<backtab>" "previous button" backward-button)
+    ("," "previous heading" leo-previous-heading)
+    ("." "next heading" leo-next-heading)]
+   [("t" "search again" leo-translate-word)
+    ("s" "search again" leo-translate-word)
+    ("b" "browse results" leo-browse-url-results)
+    ("f" "jump to forums" leo-jump-to-forum-results)]
+   [("c" "search with dictcc" leo-search-term-with-dictcc)
+    ("l" "search with linguee" leo-browse-url-linguee)
+    ("h" "search with helm dict" leo-search-in-helm-dictionary-de)
+    ("d" "search with duden" leo-browse-url-duden)]
+   [("<" "left side only" leo-translate-left-side-only)
+    (">" "right side only" leo-translate-right-side-only)]])
 
 (defvar leo-result-search-map
   (let ((map (make-sparse-keymap)))
