@@ -175,7 +175,7 @@ agent."
       (define-key map (kbd "c") #'leo-search-term-with-dictcc))
     (define-key map (kbd "l") #'leo-browse-url-linguee)
     (when (require 'helm-dictionary nil :noerror)
-      (define-key map (kbd "d") #'leo-search-in-helm-dictionary-de))
+      (define-key map (kbd "h") #'leo-search-in-helm-dictionary-de))
     (define-key map (kbd "d") #'leo-browse-url-duden)
     map)
   "Keymap for leo mode.")
