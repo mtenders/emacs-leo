@@ -1081,7 +1081,7 @@ Return 30 results for a single POS, rather than 16 for every POS."
 (defun leo--get-region ()
   "Get current region if active, including from `pdf-view-mode' if active."
   (if (and (equal major-mode 'pdf-view-mode)
-           (region-active-p))
+           (pdf-view-active-region-p))
       (car (pdf-view-active-region-text))
     (when (use-region-p)
       (buffer-substring-no-properties (region-beginning) (region-end)))))
