@@ -503,7 +503,7 @@ by + or \\."
       (setq result (replace-match ":" nil nil result))))
   result)
 
-(defun leo--space-before-term (leo-words-list result)
+(defun leo--space-before-term (result leo-words-list)
   "Ensure a space before any words in LEO-WORDS-LIST in string RESULT.
 This is to handle the loss of our <br> tags in the XML."
   ;; needs to work on second variant, not on first item in words-list
@@ -634,19 +634,17 @@ List items in words-list are applied as both split lists and whole strings."
 (defun leo--process-result-string (result leo-words-list)
   "Process RESULT string with LEO-WORDS-LIST.
 Just a junk function for all our culling and propertizing hacks."
-  (leo--propertize-words-list-in-result
-   (s-collapse-whitespace
-    (leo--space-before-term
-     leo-words-list
-     (propertize
-      (leo--remove-period-before-colons
-       (leo--remove-period-from-domain-string
-        (leo--remove-space-before-marker
-         (leo--remove-space-after-characters
-          (leo--remove-space-around-word-hypens
-           result)))))
-      'face 'leo-auxiliary-face)))
-   leo-words-list))
+  (thread-first
+    result
+    (leo--remove-space-around-word-hypens)
+    (leo--remove-space-after-characters)
+    (leo--remove-space-before-marker)
+    (leo--remove-period-from-domain-string)
+    (leo--remove-period-before-colons)
+    (propertize 'face 'leo-auxiliary-face)
+    (leo--space-before-term leo-words-list)
+    (s-collapse-whitespace)
+    (leo--propertize-words-list-in-result leo-words-list)))
 
 (defun leo--propertize-result-string (result leo-words-list)
   "Return a nicely formatted and propertized RESULT for printing a side.
