@@ -643,7 +643,7 @@ Just a junk function for all our culling and propertizing hacks."
     (leo--remove-period-before-colons)
     (propertize 'face 'leo-auxiliary-face)
     (leo--space-before-term leo-words-list)
-    (s-collapse-whitespace)
+    (string-clean-whitespace)
     (leo--propertize-words-list-in-result leo-words-list)))
 
 (defun leo--propertize-result-string (result leo-words-list)
