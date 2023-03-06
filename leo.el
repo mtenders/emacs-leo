@@ -182,7 +182,7 @@ agent."
     map)
   "Keymap for leo mode.")
 
-(transient-define-prefix leo-dispatch
+(transient-define-prefix leo-dispatch ()
   "leo results commands"
   ["leo results commands"
    [("TAB" "next button" forward-button)
