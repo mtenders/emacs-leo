@@ -60,8 +60,9 @@
   (declare-function helm-dictionary "helm-dictionary")
   (defvar helm-dictionary-database)
   (defvar leo-helm-dictionary-name "de-en"
-    "The name of the dictionary to use for `helm-dictionary' queries.\
-It must match the key of one of the dictionaries in `helm-dictionary-database'."))
+    "The name of the dictionary to use for `helm-dictionary' queries.
+It must match the key of one of the dictionaries in
+`helm-dictionary-database'."))
 
 (when (require 'pdf-tools nil :no-error)
   (declare-function pdf-view-active-region-text "pdf-view"))
@@ -431,7 +432,8 @@ Each contains two sides, or results in a pair of languages."
 
 ;; PROPERTIZING
 (defun leo--add-props-to-match (match &optional start end)
-  "Add text properties to string MATCH."
+  "Add text properties to string MATCH.
+Optionally add from START to END."
   (add-text-properties (or start (match-beginning 0)) (or end (match-end 0))
                        (list 'button t
                              'follow-link t
@@ -1105,7 +1107,8 @@ Return 30 results for a single POS, rather than 16 for every POS."
       (buffer-substring-no-properties (region-beginning) (region-end)))))
 
 (defun leo-paste-to-search (&optional prefix)
-  "Call `leo-translate-word' with the most recent killed text as default input."
+  "Call `leo-translate-word' with the most recent killed text as default input.
+PREFIX is handed on to that function."
   (interactive)
   (leo-translate-word prefix (current-kill 0)))
 
