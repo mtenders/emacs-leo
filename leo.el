@@ -242,14 +242,13 @@ Used to build the URL for external browsing to leo.de.
 And, reversed, to prompt for language choice when `leo-translate-word'
 and `leo-translate-at-point' are called with a prefix arg.")
 
-(defvar leo--results-info nil
+(defvar-local leo--results-info nil
   "Information about the current results from a leo search.
 Used to store search term for `leo-browse-url-results', and
 language searched for `leo--translate-word-return-search' or
 `leo--translate-word-click-search' after `leo-translate-word'
 is called with a prefix argument to set a non-default search
 language.")
-(make-variable-buffer-local 'leo--results-info)
 
 (defconst leo-case-markers '("Nom." "Akk." "Dat." "Gen."))
 
