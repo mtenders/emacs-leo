@@ -753,7 +753,7 @@ POS is the part of speech of the side."
   "Format and print translation RESULTS.
 WORD is the search term, SIMILAR is a list of suggestions to
 display if results are nil."
-  (with-current-buffer (get-buffer " *leo*")
+  (with-current-buffer (get-buffer "*leo*")
     (if (null results) ;nil
         (leo--did-you-mean word similar)
       (mapcar #'leo--print-single-section results))))
@@ -778,7 +778,7 @@ display if results are nil."
            (post-title (leo--propertize-forum-title forum-posts url))
            (teaser (propertize (nth 2 (car forum-posts))
                                'face 'leo-auxiliary-face)))
-      (with-current-buffer (get-buffer " *leo*")
+      (with-current-buffer (get-buffer "*leo*")
         (insert
          (concat
           post-title
@@ -973,7 +973,7 @@ Results are links to searches for themselves."
 
 (defun leo--make-buttons ()
   "Make all property ranges with button property into buttons."
-  (with-current-buffer (get-buffer " *leo*")
+  (with-current-buffer (get-buffer "*leo*")
     (let ((inhibit-read-only t))
       (save-excursion
         (goto-char (point-min))
@@ -1011,7 +1011,7 @@ Results are links to searches for themselves."
 
 (defun leo--print-results-buffer-heading (word)
   "Insert heading in buffer showing results for WORD."
-  (with-current-buffer (get-buffer " *leo*")
+  (with-current-buffer (get-buffer "*leo*")
     (insert
      (propertize
       (concat "leo.de search results for " word ":")
@@ -1021,7 +1021,7 @@ Results are links to searches for themselves."
 
 (defun leo--print-results-buffer-forum-heading (word)
   "Insert forum results heading in buffer showing results for WORD."
-  (with-current-buffer (get-buffer " *leo*")
+  (with-current-buffer (get-buffer "*leo*")
     (insert
      (propertize
       (concat "leo.de forum results for " word ":\n\n")
@@ -1033,7 +1033,7 @@ Results are links to searches for themselves."
 The search term WORD is propertized in results. The search is
 between LANG and German. SIMILAR is a list of suggestions to
 display if there are no results."
-  (with-current-buffer (get-buffer-create " *leo*")
+  (with-current-buffer (get-buffer-create "*leo*")
     (read-only-mode -1)
     (erase-buffer)
     (leo--print-results-buffer-heading word)
@@ -1044,8 +1044,8 @@ display if there are no results."
     (leo--propertize-search-term-in-results word)
     (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
-  (unless (equal (buffer-name (current-buffer)) " *leo*")
-    (switch-to-buffer-other-window (get-buffer " *leo*")))
+  (unless (equal (buffer-name (current-buffer)) "*leo*")
+    (switch-to-buffer-other-window (get-buffer "*leo*")))
   (goto-char (point-min))
   (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
