@@ -12,13 +12,14 @@ In the results buffer:
 - click on a word to search for it
 - `<tab>` to a word or phrase then hit `<return>` to search for it
 - `t` or `s` to search again
+- `v` to instantly search for the most recent kill ring item (paste and search).
 - `C-u t` to search again and choose your language
 - `,` and `.` to go to the previous/next part of speech heading.
 - `f` to jump to forum results
 - click on a part of speech heading to view more results of only that type.
 - `<` and `>` to limit search to source/target language.
 - `b` to view results in external browser
-<!-- - `d` to search the same term in [helm-dictionary](https://github.com/emacs-helm/helm-dictionary). (for this to work, one of the dictionaries in `helm-dictionary-database` needs to be named `de-en`, for example `("de-en" . "~/path/to/dictionaries/de-en.ding")`.) -->
+- `d` to browse the results in [duden.de](https://www.duden.de/)
 - `l` to browse the results in [linguee.de](https://www.linguee.de)
 - and `c` to search the same term with [dictcc.el](https://github.com/martenlienen/dictcc.el) if it's installed.
 
