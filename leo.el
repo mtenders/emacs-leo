@@ -1047,9 +1047,9 @@ display if there are no results."
   (goto-char (point-min))
   (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
- '<'/'>': search in left/right lang only, 'l': search on linguee.de"
+ '<'/'>': search in left/right lang only, 'l': search on linguee.de, 'd': search on duden.de"
                    (when (require 'helm-dictionary nil :noerror)
-                     ", 'd': search in helm-dictionary")
+                     ", 'h': search in helm-dictionary")
                    (when (require 'dictcc nil :noerror)
                      ", 'c': search with dictcc.el"))))
 
