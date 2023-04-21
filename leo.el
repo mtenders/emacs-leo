@@ -50,6 +50,7 @@
 (require 'dom)
 (require 'shr)
 (require 'browse-url)
+(require 'aio)
 (require 'url-cache)
 (require 'text-property-search)
 (require 'transient)
@@ -277,7 +278,7 @@ Returns 16 results per POS."
                "&sectLenMax=30"))
      "&multiwordShowSingle=on")))
 
-(defun leo--parse-xml (url)
+(aio-defun leo--parse-xml (url)
   "Parse xml file retrieved from URL."
   (let ((url-user-agent leo-user-agent))
     (if (url-is-cached url)
@@ -287,9 +288,15 @@ Returns 16 results per POS."
             (zlib-decompress-region start (point-max))
             (set-buffer-multibyte t)
             (xml-parse-region start (point-max))))
-      (with-temp-buffer
-	    (url-insert-file-contents url)
-	    (xml-parse-region (point-min) (point-max))))))
+      (let ((response (aio-await (aio-url-retrieve url))))
+        (with-current-buffer (cdr response)
+          (goto-char (point-min))
+          ;; FIXME: how to handle multibyte chars in response:
+          (toggle-enable-multibyte-characters)
+          (toggle-enable-multibyte-characters)
+	      ;; (url-insert-file-contents url)
+	      (xml-parse-region (search-forward "\n\n")
+                            (point-max)))))))
 
 (defun leo--map-get-children (seq child)
   "Map `xml-get-children' over SEQ for CHILD."
@@ -1070,10 +1077,10 @@ SIDE is a string of either \"left\" or \"right\"."
   (interactive)
   (leo-translate-single-side "right"))
 
-(defun leo--translate (lang word &optional pos side)
+(aio-defun leo--translate (lang word &optional pos side)
   "Translate WORD between LANG and German.
 SIDE is the side to search in, either \"left\" or \"right\"."
-  (let* ((xml (leo--parse-xml (leo--generate-url lang word pos side)))
+  (let* ((xml (aio-await (leo--parse-xml (leo--generate-url lang word pos side))))
          (section-list (car (leo--get-result-section-list (car xml))))
          ;; similar terms to offer if no results:
          (similar-list (car (leo--get-result-similar-list (car xml)))))
