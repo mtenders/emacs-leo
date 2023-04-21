@@ -1114,7 +1114,9 @@ Return 30 results for a single POS, rather than 16 for every POS."
   "Call `leo-translate-word' with the most recent killed text as default input.
 PREFIX is handed on to that function."
   (interactive)
-  (leo-translate-word prefix (current-kill 0)))
+  (let ((term (current-kill 0)))
+    (add-to-history 'minibuffer-history term)
+    (leo-translate-word prefix (current-kill 0))))
 
 ;;;###autoload
 (defun leo-translate-word (&optional prefix default-input)
