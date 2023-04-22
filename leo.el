@@ -1102,6 +1102,8 @@ Return 30 results for a single POS, rather than 16 for every POS."
             (cons (cdr x) (car x)))
           langs))
 
+(declare-function pdf-view-active-region-p "pdf-view")
+
 (defun leo--get-region ()
   "Get current region if active, including from `pdf-view-mode' if active."
   (if (and (equal major-mode 'pdf-view-mode)
