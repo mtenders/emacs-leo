@@ -863,6 +863,24 @@ with a prefix arguemnt."
                        "\\b")))
     (helm-dictionary leo-helm-dictionary-name query t)))
 
+(when (require 'reverso nil :no-error)
+  (declare-function reverso--translate "reverso")
+  (declare-function reverso--translate-render "reverso")
+  (declare-function reverso--with-buffer "reverso")
+
+  (defun leo-browse-term-reverso ()
+    "Search for current term with reverso.com"
+    (interactive)
+    (let* ((query (plist-get leo--results-info 'term)))
+      (reverso--translate
+       query
+       'english
+       'german
+       (lambda (data)
+         (reverso--with-buffer
+           (reverso--translate-render query data)))))))
+
+
 (defun leo--translate-word-click-search (event)
   "Translate word on mouse click EVENT between `leo-language' and German."
   (interactive "e")
