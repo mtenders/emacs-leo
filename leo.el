@@ -1071,7 +1071,7 @@ display if there are no results."
     (leo-mode)
     (setq leo--results-info `(term ,word lang ,lang)))
   (unless (equal (buffer-name (current-buffer)) "*leo*")
-    (switch-to-buffer-other-window (get-buffer "*leo*")))
+    (switch-to-buffer-other-window "*leo*"))
   (goto-char (point-min))
   (message (concat "'t'/'s': search again, prefix: set language,\
  '.'/',': next/prev heading, 'f': jump to forums, 'b': view in browser,\
