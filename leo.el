@@ -179,6 +179,8 @@ agent."
     (when (require 'helm-dictionary nil :noerror)
       (define-key map (kbd "h") #'leo-search-in-helm-dictionary-de))
     (define-key map (kbd "d") #'leo-browse-url-duden)
+    (when (require 'reverso nil :no-error)
+      (define-key map (kbd "r") #'leo-browse-term-reverso))
     map)
   "Keymap for leo mode.")
 
@@ -197,6 +199,7 @@ agent."
     ("l" "search with linguee" leo-browse-url-linguee)]
    [("h" "search with helm dict" leo-search-in-helm-dictionary-de)
     ("d" "search with duden" leo-browse-url-duden)
+    ("r" "search with reverso" leo-browse-term-reverso)
     ("<" "left side only" leo-translate-left-side-only)
     (">" "right side only" leo-translate-right-side-only)]])
 
