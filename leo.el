@@ -855,7 +855,7 @@ with a prefix arguemnt."
                           query
                         (string-join query-split "+"))))
     (browse-url-generic (concat
-                         "https://www.duden.de/rechtschreibung/"
+                         "https://www.duden.de/suchen/dudenonline/"
                          query-final))))
 
 (defun leo-search-in-helm-dictionary-de ()
