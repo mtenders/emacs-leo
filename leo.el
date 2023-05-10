@@ -987,14 +987,16 @@ Results are links to searches for themselves."
           (mapcar (lambda (x)
                     (car (xml-node-children x)))
                   sim-word-nodes))
-         (sim-words-propertized (leo--propertize-similars sim-word-strings)))
+         (sim-words-propertized
+          (when sim-word-strings
+            (leo--propertize-similars sim-word-strings))))
     (insert
      (concat
       "No entries for " word ". "
-      (if sim-words-propertized
-          (concat
-           "Did you mean:\n\n "
-           (mapconcat #'identity sim-words-propertized "  "))))
+      (when sim-words-propertized
+        (concat
+         "Did you mean:\n\n "
+         (mapconcat #'identity sim-words-propertized "  "))))
      "\n\nHit 't'/'s' to search again.\n\n")))
 
 (defun leo--make-buttons ()
