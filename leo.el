@@ -7,7 +7,7 @@
 ;;         Marty Hiatt <martianhiatus AT riseup.net>
 ;; Created: 21 Oct 2020
 ;;
-;; Package-Requires: ((emacs "28.1") (s "1.12.0"))
+;; Package-Requires: ((emacs "28.1") (s "1.12.0") (aio "1.0"))
 ;; Keywords: convenience, translate, wp, dictionary
 ;; URL: https://codeberg.org/martianh/emacs-leo
 ;; Version: 0.3
