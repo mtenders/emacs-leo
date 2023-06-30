@@ -3,7 +3,7 @@
 
 This package allows you to interact with [Leo.de](https://leo.de) dictionaries from within emacs.
 
-It provides the command `leo-translate-word`. If no other phrase is entered, the word currently under the cursor is used. It translates between German and the language set by the custom variable `leo-language`. The second language can also be specified interactively by invoking the commands with a prefix argument.
+It provides the command `leo-translate-word`. If no other phrase is entered, the word currently under the cursor is used. If the region is active, it is used (this also works in `pdf-view-mode`). It translates between German and the language set by the custom variable `leo-language`. The second language can also be specified interactively by invoking the commands with a prefix argument.
 
 Results are sorted by part of speech, and display all additional information about the term such as usage, case markers, linguistic variant, etc. They also include a direct link to conjugation or inflection tables, shown as the icon `▦` (or `#`).
 
@@ -11,13 +11,18 @@ In the results buffer:
 
 - click on a word to search for it
 - `<tab>` to a word or phrase then hit `<return>` to search for it
-- `t` to search again
+- `t` or `s` to search again
+- `v` to instantly search for the most recent kill ring item (paste and search).
 - `C-u t` to search again and choose your language
 - `,` and `.` to go to the previous/next part of speech heading.
 - `f` to jump to forum results
 - click on a part of speech heading to view more results of only that type.
+- `<` and `>` to limit search to source/target language.
 - `b` to view results in external browser
+- `d` to browse the results in [duden.de](https://www.duden.de/)
+- `l` to browse the results in [linguee.de](https://www.linguee.de)
 - and `c` to search the same term with [dictcc.el](https://github.com/martenlienen/dictcc.el) if it's installed.
+
 
 Links to forum results are also displayed. It is better to view these externally, which you can do by `C-u RET` with point on an entry. 
 
@@ -32,3 +37,7 @@ The pairs tested while hacking on this are `en` < > `de`, plus a little `fr` < >
 It looks like this:
 
 ![emacs-leo-screenshot](./emacs-leo-screenshot.png)
+
+## other packages
+
+You may also be interested in [wordreference.el](https://codeberg.org/martianh/wordreference.el), my package for https://wordreference.com.
